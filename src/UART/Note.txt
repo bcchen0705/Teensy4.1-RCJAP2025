@@ -1,0 +1,2 @@
+Question:
+What is the data transmission frequency of BNO085?
