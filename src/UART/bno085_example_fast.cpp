@@ -72,57 +72,6 @@ BNO085Data decodeBNO085(Stream &serial) {
 
     return data; // no packet available
 }
-
-/*
-BNO085Data decodeBNO085(Stream &serial) {
-  BNO085Data data = {0,0,0,0,0,0,0,false};
-  const int PACKET_SIZE = 19;
-  uint8_t buffer[PACKET_SIZE];
-
-  while (serial.available() >= PACKET_SIZE) {
-    buffer[0] = serial.read();
-    if (buffer[0] != 0xAA) continue;
-    buffer[1] = serial.read();
-    if (buffer[1] != 0xAA) continue;
-    size_t n = serial.readBytes(buffer + 2, 17);
-    if (n != 17) {
-        // Not enough bytes received, discard and wait for next packet
-        break;
-    }
-    uint8_t index = buffer[2];
-    uint8_t checksum = buffer[18];
-
-    // Checksum (sum of bytes [2..17])
-    uint16_t sum = 0;
-    for (int i = 2; i <= 17; i++) {
-      sum += buffer[i];
-    }
-    sum &= 0xFF;
-
-    if (sum == checksum) {
-        // Little-endian decode
-        int16_t yaw_raw   = (int16_t)((buffer[4] << 8) | buffer[3]);
-        //int16_t pitch_raw = (int16_t)((buffer[6] << 8) | buffer[5]);
-        //int16_t roll_raw  = (int16_t)((buffer[8] << 8) | buffer[7]);
-
-        int16_t ax_raw = (int16_t)((buffer[10] << 8) | buffer[9]);
-        int16_t ay_raw = (int16_t)((buffer[12] << 8) | buffer[11]);
-        //int16_t az_raw = (int16_t)((buffer[14] << 8) | buffer[13]);
-        data.index = index;
-        data.yaw   = yaw_raw   * 0.01f;
-        //data.pitch = pitch_raw * 0.01f;
-        //data.roll  = roll_raw  * 0.01f;
-        data.ax = ax_raw * 0.00980665f;
-        data.ay = ay_raw * 0.00980665f;
-        //data.az = az_raw * 0.00980665f;
-        data.valid = true;
-        }
-    break;
-  }
-  return data;
-}
-
-*/
 // ------------------ Arduino setup & loop ------------------
 
 void setup() {
