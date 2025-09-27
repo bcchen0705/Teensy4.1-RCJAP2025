@@ -1,4 +1,29 @@
 #include <Robot.h>
+int lightSensor = 999;
+int ballSensor  = 999;
+void setup(){
+   Serial2.begin(115200);
+   Serial3.begin(115200);
+   Serial4.begin(115200);
+   Serial5.begin(115200);
+   Serial6.begin(115200);
+   Serial7.begin(115200);
+   Serial8.begin(115200);
+  pinMode(BUTTON_LEFT, INPUT_PULLUP);
+  pinMode(BUTTON_RIGHT, INPUT_PULLUP);
+
+
+
+  Wire.begin();
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
+
+
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  showStart();
+}
+// ------------------ loop ------------------
+=======
 void setup(){
     Serial2.begin(115200);
     Serial3.begin(115200);
@@ -20,8 +45,11 @@ int lastLeftState  = HIGH;
 int lastRightState = HIGH;
 unsigned long lastPress = 0;
 unsigned long lastUpdate = 0;
+bool showData = false;  // false = Start/Run, true = 顯示數據
+bool showRun  = false;
 
-void loop() {
+
+void loop(){
   int leftState  = digitalRead(BUTTON_LEFT);
   int rightState = digitalRead(BUTTON_RIGHT);
 
@@ -43,6 +71,17 @@ void loop() {
       lastPress = millis();
       if (showRun) showRunScreen();
       else showStart();
+
+    }
+  }
+  
+  lastRightState = rightState;
+  readBNO085Yaw();
+  if (showData && (millis() - lastUpdate > 200)) {
+    showSensors(gyroData.heading, lightSensor, ballSensor);
+    lastUpdate = millis();
+  }
+}
     }
   }
   lastRightState = rightState;
