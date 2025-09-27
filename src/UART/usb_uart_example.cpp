@@ -9,7 +9,7 @@
 */
 
 void setup() {
-  Serial.begin(115200);      // USB serial for debug
+  Serial.begin(9600);      // USB serial for debug
   pinMode(13, OUTPUT);       
   digitalWrite(13, HIGH);    // LED ON
   delay(2000);
@@ -17,25 +17,25 @@ void setup() {
   Serial.println("=== Teensy 4.1 Multi-UART Test (read 4 bytes) ===");
 
   // Start all UARTs at 9600 baud
-  Serial2.begin(9600);
-  Serial3.begin(9600);
-  Serial4.begin(9600);
-  Serial5.begin(9600);
-  Serial6.begin(9600);
-  Serial7.begin(9600);
-  Serial8.begin(9600);
+  Serial2.begin(115200);
+  Serial3.begin(115200);
+  Serial4.begin(115200);
+  Serial5.begin(115200);
+  Serial6.begin(115200);
+  Serial7.begin(115200);
+  Serial8.begin(115200);
 }
 
 void loop() {
   char buf[5];  // 4 chars + null terminator
 
   // Serial2
-  if (Serial2.available() >= 4) {
+  /*if (Serial2.available() >= 4) {
     Serial2.readBytes(buf, 4);
     buf[4] = '\0';
     Serial.print("Serial2 got: "); Serial.println(buf);
     Serial2.print("Echo: "); Serial2.println(buf);
-  }
+  }*/
 
   // Serial3
   if (Serial3.available() >= 4) {
