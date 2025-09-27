@@ -23,6 +23,24 @@ void setup(){
   showStart();
 }
 // ------------------ loop ------------------
+=======
+void setup(){
+    Serial2.begin(115200);
+    Serial3.begin(115200);
+    Serial4.begin(115200);
+    Serial5.begin(115200);
+    Serial6.begin(115200);
+    Serial7.begin(115200);
+    Serial8.begin(115200);
+    pinMode(BUTTON_LEFT, INPUT_PULLUP);
+    pinMode(BUTTON_RIGHT, INPUT_PULLUP);
+    Wire.begin();
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    showStart();
+}
+
 int lastLeftState  = HIGH;
 int lastRightState = HIGH;
 unsigned long lastPress = 0;
@@ -53,13 +71,28 @@ void loop(){
       lastPress = millis();
       if (showRun) showRunScreen();
       else showStart();
-    
+
     }
   }
   
   lastRightState = rightState;
   if (showData && (millis() - lastUpdate > 200)) {
     showSensors(gyroData.heading, lightSensor, ballSensor);
+    lastUpdate = millis();
+  }
+}
+    }
+  }
+  lastRightState = rightState;
+
+
+  // ------------------ 讀取 BNO085 Gyro ------------------
+  readBNO085Yaw();
+
+
+  // ------------------ 顯示 Data 畫面 ------------------
+  if (showData && (millis() - lastUpdate > 200)) {
+    showSensors(gyroYaw, lightSensor, ballSensor);
     lastUpdate = millis();
   }
 }
