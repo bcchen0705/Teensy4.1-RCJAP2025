@@ -63,5 +63,3 @@ void loop(){
     lastUpdate = millis();
   }
 }
-void serialEvent2() {readBNO085Yaw(Serial2);
-}

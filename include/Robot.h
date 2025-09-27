@@ -44,20 +44,42 @@ void showSensors(float gyro, int light, int ball) {
 }
 
 
-
-void readBNO085Yaw(HardwareSerial &seerial) {
+/*
+void readBNO085Yaw(HardwareSerial &serial) {
   const int PACKET_SIZE = 19;
   uint8_t buffer[PACKET_SIZE];
 
 
-  while (Serial.available() >= PACKET_SIZE) {
-    buffer[0] = Serial.read();
+  while (serial.available() >= PACKET_SIZE) {
+    buffer[0] = serial.read();
     if (buffer[0] != 0xAA) continue;
-    buffer[1] = Serial.read();
+    buffer[1] = serial.read();
     if (buffer[1] != 0xAA) continue;
 
 
-    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial.read();
+    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = serial.read();
+
+
+    int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
+    gyroData.valid = true;
+    gyroData.heading = yaw_raw * 0.01f; // 轉成度
+    break;
+  }
+}*/
+
+void readBNO085Yaw() {
+  const int PACKET_SIZE = 19;
+  uint8_t buffer[PACKET_SIZE];
+
+
+  while (Serial2.available() >= PACKET_SIZE) {
+    buffer[0] = Serial2.read();
+    if (buffer[0] != 0xAA) continue;
+    buffer[1] = Serial2.read();
+    if (buffer[1] != 0xAA) continue;
+
+
+    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial2.read();
 
 
     int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
