@@ -2,16 +2,12 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
-
 #define BUTTON_LEFT  31
 #define BUTTON_RIGHT 30
-
-
 // ------------------ OLED ------------------
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
-
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -19,10 +15,18 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
+struct LineData {int data = 999; bool valid = false;} lineData;
+struct BallData {int data = 999; bool valid = false;} ballData;
 
 
-// ------------------ OLED 顯示函式 ------------------
+void linesensor(){
+    lineData.data = 999;
+}
 
+void ballsensor(){
+    ballData.data = 999;
+}
+   
 void showStart() {
   display.clearDisplay();
   display.setTextSize(2);
@@ -74,7 +78,6 @@ void readBNO085Yaw(HardwareSerial &serial) {
   }
 }*/
 
-
 void readBNO085Yaw() {
   const int PACKET_SIZE = 19;
   uint8_t buffer[PACKET_SIZE];
@@ -89,8 +92,6 @@ void readBNO085Yaw() {
 
     for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial2.read();
 
-
-    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial2.read();
 
     int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
     gyroData.valid = true;
