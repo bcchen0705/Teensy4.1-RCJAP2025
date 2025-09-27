@@ -45,19 +45,19 @@ void showSensors(float gyro, int light, int ball) {
 
 
 
-void readBNO085Yaw() {
+void readBNO085Yaw(HardwareSerial &seerial) {
   const int PACKET_SIZE = 19;
   uint8_t buffer[PACKET_SIZE];
 
 
-  while (Serial2.available() >= PACKET_SIZE) {
-    buffer[0] = Serial2.read();
+  while (Serial.available() >= PACKET_SIZE) {
+    buffer[0] = Serial.read();
     if (buffer[0] != 0xAA) continue;
-    buffer[1] = Serial2.read();
+    buffer[1] = Serial.read();
     if (buffer[1] != 0xAA) continue;
 
 
-    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial2.read();
+    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial.read();
 
 
     int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);

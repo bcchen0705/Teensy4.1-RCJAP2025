@@ -58,9 +58,10 @@ void loop(){
   }
   
   lastRightState = rightState;
-  readBNO085Yaw();
   if (showData && (millis() - lastUpdate > 200)) {
     showSensors(gyroData.heading, lightSensor, ballSensor);
     lastUpdate = millis();
   }
+}
+void serialEvent2() {readBNO085Yaw(Serial2);
 }
