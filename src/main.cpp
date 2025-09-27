@@ -144,6 +144,3 @@ void loop() {
     lastUpdate = millis();
   }
 }
-
-
-
