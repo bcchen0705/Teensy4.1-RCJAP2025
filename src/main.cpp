@@ -54,12 +54,7 @@ void loop(){
   }
   
   lastRightState = rightState;
-  if (showData && (millis() - lastUpdate > 200)) {
-    showSensors(gyroData.heading, lightSensor, ballSensor);
-    lastUpdate = millis();
-  }
-  lastRightState = rightState;
-
+  
   // ------------------ 讀取 BNO085 Gyro ------------------
   readBNO085Yaw();
 
@@ -73,5 +68,5 @@ void loop(){
 
 
 void robot_attack(){
-  
+  ;
 }

@@ -2,15 +2,17 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
+//Buttons
 #define BUTTON_LEFT  31
 #define BUTTON_RIGHT 30
-// ------------------ OLED ------------------
+//OLED
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
-
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+//Motors
 
+//Sensors
 struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
 struct LineData {uint32_t state = 999; bool valid = false;} lineData;
 struct BallData {uint8_t dir = 255; uint8_t dis = 255; bool valid = false;} ballData;
