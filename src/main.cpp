@@ -2,13 +2,13 @@
 int lightSensor = 999;
 int ballSensor  = 999;
 void setup(){
-    Serial2.begin(115200);
-    Serial3.begin(115200);
-    Serial4.begin(115200);
-    Serial5.begin(115200);
-    Serial6.begin(115200);
-    Serial7.begin(115200);
-    Serial8.begin(115200);
+    Serial2.begin(115200);//Gyro
+    Serial3.begin(115200);//OnBoard Maix Bit
+    Serial4.begin(115200);//Ball Sensor
+    Serial5.begin(115200);//Line Sensor
+    Serial6.begin(115200);//OnBoard ESP32
+    Serial7.begin(115200);//
+    Serial8.begin(115200);//
     pinMode(BUTTON_LEFT, INPUT_PULLUP);
     pinMode(BUTTON_RIGHT, INPUT_PULLUP);
     pinMode(LED_BUILTIN, OUTPUT);
@@ -41,7 +41,6 @@ void loop(){
   }
   lastLeftState = leftState;
 
-
   // ------------------ 右鍵在 Start 顯示 Run ------------------
   if (rightState == LOW && lastRightState == HIGH && (millis() - lastPress) > 100) {
     if (!showData) {  // 只有 Start 畫面生效
@@ -49,19 +48,18 @@ void loop(){
       lastPress = millis();
       if (showRun) showRunScreen();
       else showStart();
-
     }
   }
-  
   lastRightState = rightState;
-  
+
+
   // ------------------ 讀取 BNO085 Gyro ------------------
   readBNO085Yaw();
 
 
   // ------------------ 顯示 Data 畫面 ------------------
   if (showData && (millis() - lastUpdate > 200)) {
-    showSensors(gyroData.heading, lightSensor, ballSensor);
+    showSensors(gyroData.heading, ballData.dir, ballSensor);
     lastUpdate = millis();
   }
 }

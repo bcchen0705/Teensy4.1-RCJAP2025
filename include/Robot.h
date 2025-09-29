@@ -58,9 +58,10 @@ void readBNO085Yaw() {
 }
 
 void ballsensor(){
+  uint8_t buffer_index = 0;
   uint8_t buffer[3];
   ballData.valid = false;
-  if (Serial3.available()) {
+  while (Serial3.available()) {
     uint8_t b = Serial3.read();
     if (buffer_index == 0 && b != 0xAA) return; // wait for start
     buffer[buffer_index++] = b;
@@ -78,9 +79,10 @@ void ballsensor(){
 }
 
 void linesensor(){
+  uint8_t buffer_index = 0;
   uint8_t buffer[7];
   lineData.valid = false;
-  if (Serial4.available()) {
+  while (Serial4.available()) {
     uint8_t b = Serial4.read();
     if (buffer_index == 0 && b != 0xAA) return; // wait for start
     buffer[buffer_index++] = b;
