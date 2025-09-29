@@ -11,6 +11,19 @@
 #define OLED_RESET -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 //Motors
+#define PWM_1 999
+#define DIRA_1 999
+#define DIRB_1 999
+#define PWM_2 999
+#define DIRA_2 999
+#define DIRB_2 999
+#define PWM_3 999
+#define DIRA_3 999
+#define DIRB_3 999
+#define PWM_4 999
+#define DIRA_4 999
+#define DIRB_4 999
+
 
 //Sensors
 struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
@@ -41,6 +54,41 @@ void readBNO085Yaw(HardwareSerial &serial) {
   }
 }*/
 
+void Robot_Init(){
+    Serial2.begin(115200);//Gyro
+    Serial3.begin(115200);//OnBoard Maix Bit
+    Serial4.begin(115200);//Ball Sensor
+    Serial5.begin(115200);//Line Sensor
+    Serial6.begin(115200);//OnBoard ESP32
+    Serial7.begin(115200);//
+    Serial8.begin(115200);//
+    //Menu Buttons
+    pinMode(BUTTON_LEFT, INPUT_PULLUP);
+    pinMode(BUTTON_RIGHT, INPUT_PULLUP);
+    //OnBoard LED
+    pinMode(LED_BUILTIN, OUTPUT);
+    //Motor 1
+    pinMode(PWM_1, OUTPUT);
+    pinMode(DIRA_1, OUTPUT);
+    pinMode(DIRA_2, OUTPUT);
+    //Motor 2
+    pinMode(PWM_2, OUTPUT);
+    pinMode(DIRA_2, OUTPUT);
+    pinMode(DIRB_2, OUTPUT);
+    //Motor 3
+    pinMode(PWM_3, OUTPUT);
+    pinMode(DIRA_3, OUTPUT);
+    pinMode(DIRB_3, OUTPUT);
+    //Motor 4
+    pinMode(PWM_4, OUTPUT);
+    pinMode(DIRA_4, OUTPUT);
+    pinMode(DIRB_4, OUTPUT);
+    Wire.begin();
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+}
+
 void readBNO085Yaw() {
   const int PACKET_SIZE = 19;
   uint8_t buffer[PACKET_SIZE];
@@ -61,8 +109,8 @@ void ballsensor(){
   uint8_t buffer_index = 0;
   uint8_t buffer[3];
   ballData.valid = false;
-  while (Serial3.available()) {
-    uint8_t b = Serial3.read();
+  while (Serial4.available()) {
+    uint8_t b = Serial4.read();
     if (buffer_index == 0 && b != 0xAA) return; // wait for start
     buffer[buffer_index++] = b;
 
@@ -82,8 +130,8 @@ void linesensor(){
   uint8_t buffer_index = 0;
   uint8_t buffer[7];
   lineData.valid = false;
-  while (Serial4.available()) {
-    uint8_t b = Serial4.read();
+  while (Serial5.available()) {
+    uint8_t b = Serial5.read();
     if (buffer_index == 0 && b != 0xAA) return; // wait for start
     buffer[buffer_index++] = b;
     if (buffer_index == 7) {
@@ -100,8 +148,6 @@ void linesensor(){
     }
   }
 }
-
-
 /*Actuators Part*/
 
    
