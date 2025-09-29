@@ -11,21 +11,95 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-
-
-
 struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
-struct LineData {int data = 999; bool valid = false;} lineData;
-struct BallData {int data = 999; bool valid = false;} ballData;
+struct LineData {uint32_t state = 999; bool valid = false;} lineData;
+struct BallData {uint8_t dir = 255; uint8_t dis = 255; bool valid = false;} ballData;
+
+/*Sensors Part*/
+/*
+void readBNO085Yaw(HardwareSerial &serial) {
+  const int PACKET_SIZE = 19;
+  uint8_t buffer[PACKET_SIZE];
 
 
-void linesensor(){
-    lineData.data = 999;
+  while (serial.available() >= PACKET_SIZE) {
+    buffer[0] = serial.read();
+    if (buffer[0] != 0xAA) continue;
+    buffer[1] = serial.read();
+    if (buffer[1] != 0xAA) continue;
+
+
+    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = serial.read();
+
+
+    int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
+    gyroData.valid = true;
+    gyroData.heading = yaw_raw * 0.01f; // 轉成度
+    break;
+  }
+}*/
+
+void readBNO085Yaw() {
+  const int PACKET_SIZE = 19;
+  uint8_t buffer[PACKET_SIZE];
+  while (Serial2.available() >= PACKET_SIZE) {
+    buffer[0] = Serial2.read();
+    if (buffer[0] != 0xAA) continue;
+    buffer[1] = Serial2.read();
+    if (buffer[1] != 0xAA) continue;
+    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial2.read();
+    int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
+    gyroData.valid = true;
+    gyroData.heading = yaw_raw * 0.01f; // 轉成度
+    break;
+  }
 }
 
 void ballsensor(){
-    ballData.data = 999;
+  uint8_t buffer[3];
+  ballData.valid = false;
+  if (Serial3.available()) {
+    uint8_t b = Serial3.read();
+    if (buffer_index == 0 && b != 0xAA) return; // wait for start
+    buffer[buffer_index++] = b;
+
+    if (buffer_index == 3) {
+      buffer_index = 0;
+      if (buffer[0] == 0xAA && buffer[2] == 0xEE) {
+        uint8_t temp = buffer[1];
+        ballData.valid = true;
+        ballData.dir = (temp & 0x0F);
+        ballData.dis = (temp & 0xF0) >> 4;
+      }
+    }
+  }
 }
+
+void linesensor(){
+  uint8_t buffer[7];
+  lineData.valid = false;
+  if (Serial4.available()) {
+    uint8_t b = Serial4.read();
+    if (buffer_index == 0 && b != 0xAA) return; // wait for start
+    buffer[buffer_index++] = b;
+    if (buffer_index == 7) {
+      buffer_index = 0;
+      if (buffer[0] == 0xAA && buffer[0] == 0xAA && buffer[6] == 0xEE) {
+        lineData.state = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
+        uint8_t checksum = (buffer[2] + buffer[3] + buffer[4]) & 0xFF;
+        if (checksum == buffer[5]) {
+            lineData.valid = true;
+            Serial.print("sensors: ");
+            Serial.println(lineData.state, BIN);
+        }
+      }
+    }
+  }
+}
+
+
+/*Actuators Part*/
+
    
 void showStart() {
   display.clearDisplay();
@@ -55,47 +129,25 @@ void showSensors(float gyro, int light, int ball) {
 }
 
 
-/*
-void readBNO085Yaw(HardwareSerial &serial) {
-  const int PACKET_SIZE = 19;
-  uint8_t buffer[PACKET_SIZE];
-
-
-  while (serial.available() >= PACKET_SIZE) {
-    buffer[0] = serial.read();
-    if (buffer[0] != 0xAA) continue;
-    buffer[1] = serial.read();
-    if (buffer[1] != 0xAA) continue;
-
-
-    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = serial.read();
-
-
-    int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
-    gyroData.valid = true;
-    gyroData.heading = yaw_raw * 0.01f; // 轉成度
-    break;
-  }
-}*/
-
-void readBNO085Yaw() {
-  const int PACKET_SIZE = 19;
-  uint8_t buffer[PACKET_SIZE];
-
-
-  while (Serial2.available() >= PACKET_SIZE) {
-    buffer[0] = Serial2.read();
-    if (buffer[0] != 0xAA) continue;
-    buffer[1] = Serial2.read();
-    if (buffer[1] != 0xAA) continue;
-
-
-    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial2.read();
-
-
-    int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
-    gyroData.valid = true;
-    gyroData.heading = yaw_raw * 0.01f; // 轉成度
-    break;
-  }
+void SetMotorSpeed(){
+  ;
 }
+
+void MotorStop(){
+  ;  
+}
+
+bool MotorTest(){
+  
+  return true;
+}
+
+
+void RobotFKControl(){
+  ;
+}
+
+void RobotIKControl(){
+  ;
+}
+

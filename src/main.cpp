@@ -11,6 +11,7 @@ void setup(){
     Serial8.begin(115200);
     pinMode(BUTTON_LEFT, INPUT_PULLUP);
     pinMode(BUTTON_RIGHT, INPUT_PULLUP);
+    pinMode(LED_BUILTIN, OUTPUT);
     Wire.begin();
     if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
     display.clearDisplay();
@@ -68,4 +69,9 @@ void loop(){
     showSensors(gyroData.heading, lightSensor, ballSensor);
     lastUpdate = millis();
   }
+}
+
+
+void robot_attack(){
+  
 }
