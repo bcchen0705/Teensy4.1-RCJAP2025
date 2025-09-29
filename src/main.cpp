@@ -2,20 +2,7 @@
 int lightSensor = 999;
 int ballSensor  = 999;
 void setup(){
-    Serial2.begin(115200);//Gyro
-    Serial3.begin(115200);//OnBoard Maix Bit
-    Serial4.begin(115200);//Ball Sensor
-    Serial5.begin(115200);//Line Sensor
-    Serial6.begin(115200);//OnBoard ESP32
-    Serial7.begin(115200);//
-    Serial8.begin(115200);//
-    pinMode(BUTTON_LEFT, INPUT_PULLUP);
-    pinMode(BUTTON_RIGHT, INPUT_PULLUP);
-    pinMode(LED_BUILTIN, OUTPUT);
-    Wire.begin();
-    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
+    Robot_Init();
     showStart();
 }
 
