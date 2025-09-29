@@ -70,7 +70,7 @@ void Robot_Init(){
     //Motor 1
     pinMode(PWM_1, OUTPUT);
     pinMode(DIRA_1, OUTPUT);
-    pinMode(DIRA_2, OUTPUT);
+    pinMode(DIRA_1, OUTPUT);
     //Motor 2
     pinMode(PWM_2, OUTPUT);
     pinMode(DIRA_2, OUTPUT);
@@ -179,12 +179,81 @@ void showSensors(float gyro, int light, int ball) {
 }
 
 
-void SetMotorSpeed(){
-  ;
+
+void SetMotorSpeed(uint8_t port, int8_t speed) {
+  // Clamp speed to -100..100
+  speed = constrain(speed, -100, 100);
+
+  // Map absolute speed to 0..255 for PWM
+  int pwmVal = map(abs(speed), 0, 100, 0, 255);
+  switch (port) {
+    case 1: // Motor 1
+      analogWrite(PWM_1, pwmVal);
+      if (speed > 0) {
+        digitalWrite(DIRA_1, HIGH);
+        digitalWrite(DIRA_2, LOW);
+      } else if (speed < 0) {
+        digitalWrite(DIRA_1, LOW);
+        digitalWrite(DIRA_2, HIGH);
+      } else {
+        digitalWrite(DIRA_1, LOW);
+        digitalWrite(DIRA_2, LOW);
+      }
+      break;
+
+    case 2: // Motor 2
+      analogWrite(PWM_2, pwmVal);
+      if (speed > 0) {
+        digitalWrite(DIRA_2, HIGH);
+        digitalWrite(DIRB_2, LOW);
+      } else if (speed < 0) {
+        digitalWrite(DIRA_2, LOW);
+        digitalWrite(DIRB_2, HIGH);
+      } else {
+        digitalWrite(DIRA_2, LOW);
+        digitalWrite(DIRB_2, LOW);
+      }
+      break;
+
+    case 3: // Motor 3
+      analogWrite(PWM_3, pwmVal);
+      if (speed > 0) {
+        digitalWrite(DIRA_3, HIGH);
+        digitalWrite(DIRB_3, LOW);
+      } else if (speed < 0) {
+        digitalWrite(DIRA_3, LOW);
+        digitalWrite(DIRB_3, HIGH);
+      } else {
+        digitalWrite(DIRA_3, LOW);
+        digitalWrite(DIRB_3, LOW);
+      }
+      break;
+
+    case 4: // Motor 4
+      analogWrite(PWM_4, pwmVal);
+      if (speed > 0) {
+        digitalWrite(DIRA_4, HIGH);
+        digitalWrite(DIRB_4, LOW);
+      } else if (speed < 0) {
+        digitalWrite(DIRA_4, LOW);
+        digitalWrite(DIRB_4, HIGH);
+      } else {
+        digitalWrite(DIRA_4, LOW);
+        digitalWrite(DIRB_4, LOW);
+      }
+      break;
+
+    default:
+      // Invalid motor port
+      break;
+  }
 }
 
 void MotorStop(){
-  ;  
+  SetMotorSpeed(1, 0);
+  SetMotorSpeed(2, 0);
+  SetMotorSpeed(3, 0);
+  SetMotorSpeed(4, 0);  
 }
 
 bool MotorTest(){
