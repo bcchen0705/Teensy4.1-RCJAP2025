@@ -5,12 +5,20 @@
 //Buttons
 #define BUTTON_LEFT  31
 #define BUTTON_RIGHT 30
+//Outter Linesensor
+/*TODO*/
+
 //OLED
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 //Motors
+//outter left pwm = 2, dir = 3,4
+//inner left pwm = 23, dir = 36,37
+//outter right pwm = 5, dir = 6,9
+//inner right pwm = 10, dir = 11,12
+
 #define PWM_1 999
 #define DIRA_1 999
 #define DIRB_1 999
@@ -23,6 +31,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define PWM_4 999
 #define DIRA_4 999
 #define DIRB_4 999
+//Kicker
+#define kicker_charge 999
+#define kicker_release 999
 
 
 //Sensors
@@ -55,7 +66,7 @@ void readBNO085Yaw(HardwareSerial &serial) {
 }*/
 
 void Robot_Init(){
-    Serial2.begin(115200);//Gyro
+    Serial2.begin(115200);//Gyro Sensor
     Serial3.begin(115200);//OnBoard Maix Bit
     Serial4.begin(115200);//Ball Sensor
     Serial5.begin(115200);//Line Sensor
@@ -83,6 +94,10 @@ void Robot_Init(){
     pinMode(PWM_4, OUTPUT);
     pinMode(DIRA_4, OUTPUT);
     pinMode(DIRB_4, OUTPUT);
+    //Kicker
+    pinMode(kicker_charge, OUTPUT);
+    pinMode(kicker_release, OUTPUT);
+    
     Wire.begin();
     if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
     display.clearDisplay();
