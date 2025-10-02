@@ -257,7 +257,18 @@ void MotorStop(){
 }
 
 bool MotorTest(){
-  
+  //left rotation
+  SetMotorSpeed(1, 10);
+  SetMotorSpeed(2, 10);
+  SetMotorSpeed(3, 10);
+  SetMotorSpeed(4, 10);  
+  delay(1000);
+  SetMotorSpeed(1, 10);
+  SetMotorSpeed(2, 10);
+  SetMotorSpeed(3, 10);
+  SetMotorSpeed(4, 10); 
+  delay(1000);
+  //right rotation
   return true;
 }
 
@@ -266,7 +277,14 @@ void RobotFKControl(){
   ;
 }
 
-void RobotIKControl(){
-  ;
+void RobotIKControl(int8_t vx, int8_t vy, float omega){
+  int8_t p1 = -vx + vy + omega;
+  int8_t p2 = -vx - vy + omega;
+  int8_t p3 = vx - vy + omega;
+  int8_t p4 = vx + vy + omega;
+  SetMotorSpeed(1, p1);
+  SetMotorSpeed(2, p2);
+  SetMotorSpeed(3, p3);
+  SetMotorSpeed(4, p4);
 }
 
