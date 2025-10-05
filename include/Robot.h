@@ -191,10 +191,7 @@ void showSensors(float gyro, int light, int ball) {
   display.setCursor(0, 15); display.print("Light: "); display.println(light);
   display.setCursor(0, 30); display.print("Ball: ");  display.println(ball);
   display.display();
-}
-
-
-
+}  
 void SetMotorSpeed(uint8_t port, int8_t speed) {
   // Clamp speed to -100..100
   speed = constrain(speed, -100, 100);
