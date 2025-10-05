@@ -40,13 +40,14 @@ void loop(){
   lastRightState = rightState;
 
 
-  // ------------------ 讀取 BNO085 Gyro ------------------
+  // ------------------ Sensor ------------------
   readBNO085Yaw();
-
+  ballsensor();
 
   // ------------------ 顯示 Data 畫面 ------------------
   if (showData && (millis() - lastUpdate > 200)) {
     showSensors(gyroData.heading, ballData.dir, ballSensor);
+    Serial.print("ball_dir="); Serial.println(ballData.dir);
     lastUpdate = millis();
   }
 }

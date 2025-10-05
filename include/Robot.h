@@ -66,6 +66,7 @@ void readBNO085Yaw(HardwareSerial &serial) {
 }*/
 
 void Robot_Init(){
+    Serial.begin(9600);
     Serial2.begin(115200);//Gyro Sensor
     Serial3.begin(115200);//OnBoard Maix Bit
     Serial4.begin(115200);//Ball Sensor
@@ -124,11 +125,15 @@ void ballsensor(){
   uint8_t buffer_index = 0;
   uint8_t buffer[3];
   ballData.valid = false;
-  while (Serial4.available()) {
+  while (Serial4.available()){
     uint8_t b = Serial4.read();
-    if (buffer_index == 0 && b != 0xAA) return; // wait for start
+    if(b == 0xFF){
+      ballData.dir = 255;
+      ballData.dis = 255;
+      break;
+    }
+    if ((buffer_index == 0 && b != 0xAA)) return; // wait for start
     buffer[buffer_index++] = b;
-
     if (buffer_index == 3) {
       buffer_index = 0;
       if (buffer[0] == 0xAA && buffer[2] == 0xEE) {
@@ -203,13 +208,13 @@ void SetMotorSpeed(uint8_t port, int8_t speed) {
       analogWrite(PWM_1, pwmVal);
       if (speed > 0) {
         digitalWrite(DIRA_1, HIGH);
-        digitalWrite(DIRA_2, LOW);
+        digitalWrite(DIRB_1, LOW);
       } else if (speed < 0) {
         digitalWrite(DIRA_1, LOW);
-        digitalWrite(DIRA_2, HIGH);
+        digitalWrite(DIRB_1, HIGH);
       } else {
         digitalWrite(DIRA_1, LOW);
-        digitalWrite(DIRA_2, LOW);
+        digitalWrite(DIRB_1, LOW);
       }
       break;
 
