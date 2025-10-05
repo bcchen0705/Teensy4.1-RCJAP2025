@@ -1,4 +1,4 @@
-#include <Wire.h>
+/*#include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
@@ -143,4 +143,20 @@ void loop() {
     showSensors(gyroYaw, lightSensor, ballSensor);
     lastUpdate = millis();
   }
+}*/
+
+#include <Arduino.h>
+#include "Robot.h"
+
+void setup(){
+  Robot_Init();
+}
+
+void loop(){
+  SetMotorSpeed(1,10);
+  SetMotorSpeed(2,10);  
+  SetMotorSpeed(3,10);
+  SetMotorSpeed(4,10);
+  
+  //MotorTest();
 }
