@@ -9,10 +9,24 @@
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 
+
+#define pwmPin1 10    // PWM 控制腳
+#define DIRA_1 11   // 方向控制腳1
+#define DIRB_1 12
+
+#define pwmPin2 2    // PWM 控制腳
+#define DIRA_2 3   // 方向控制腳1
+#define DIRB_2 4
+
+#define pwmPin3 23    // PWM 控制腳
+#define DIRA_3 36   // 方向控制腳1
+#define DIRB_3 37
+
+#define pwmPin4 5   // PWM 控制腳
+#define DIRA_4 6    // 方向控制腳1
+#define DIRB_4 9
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-
-
 
 struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
 struct LineData {int data = 999; bool valid = false;} lineData;
@@ -77,6 +91,31 @@ void readBNO085Yaw(HardwareSerial &serial) {
     break;
   }
 }*/
+void Robot_Init(){
+  Serial.begin(9600);
+  Serial2.begin(115200);
+  Serial3.begin(115200);
+  Serial4.begin(115200);
+  Serial5.begin(115200);
+  Serial6.begin(115200);
+  Serial7.begin(115200);
+  Serial8.begin(115200);
+  pinMode(pwmPin1,OUTPUT);
+  pinMode(DIRA_1,OUTPUT);
+  pinMode(DIRB_1,OUTPUT);
+
+  pinMode(pwmPin2,OUTPUT);
+  pinMode(DIRA_2,OUTPUT);
+  pinMode(DIRB_2,OUTPUT);
+
+  pinMode(pwmPin3,OUTPUT);
+  pinMode(DIRA_3,OUTPUT);
+  pinMode(DIRB_3,OUTPUT);
+
+  pinMode(pwmPin4,OUTPUT);
+  pinMode(DIRA_4,OUTPUT);
+  pinMode(DIRB_4,OUTPUT);
+}
 
 void readBNO085Yaw() {
   const int PACKET_SIZE = 19;
@@ -97,5 +136,88 @@ void readBNO085Yaw() {
     gyroData.valid = true;
     gyroData.heading = yaw_raw * 0.01f; // 轉成度
     break;
+  }
+}
+void SetMotorSpeed(uint8_t port, int8_t speed){
+  speed = constrain(speed,-100,100);
+  int pwmVal = abs(speed) * 255 / 100;
+  switch (port){
+    case 1:
+      Serial.println("case1");
+      analogWrite(pwmPin1, pwmVal);
+      if(speed>0){
+        digitalWrite(DIRA_1,HIGH);
+        digitalWrite(DIRB_1,LOW);
+      } else if(speed<0){
+        digitalWrite(DIRA_1,LOW);
+        digitalWrite(DIRB_1,HIGH);
+      } else{
+        digitalWrite(DIRA_1,LOW);
+        digitalWrite(DIRB_1,LOW);
+      }
+      break;
+    case 2:
+      Serial.println("case2");
+      analogWrite(pwmPin2, pwmVal);
+      if(speed>0){
+        digitalWrite(DIRA_2,HIGH);
+        digitalWrite(DIRB_2,LOW);
+      } else if(speed<0){
+        digitalWrite(DIRA_2,LOW);
+        digitalWrite(DIRB_2,HIGH);
+      } else{
+        digitalWrite(DIRA_2,LOW);
+        digitalWrite(DIRB_2,LOW);
+      }
+      break;
+    case 3:
+      Serial.println("case3");
+      analogWrite(pwmPin3, pwmVal);
+      if(speed>0){
+        digitalWrite(DIRA_3,HIGH);
+        digitalWrite(DIRB_3,LOW);
+      } else if(speed<0){
+        digitalWrite(DIRA_3,LOW);
+        digitalWrite(DIRB_3,HIGH);
+      } else{
+        digitalWrite(DIRA_3,LOW);
+        digitalWrite(DIRB_3,LOW);
+      }
+      break;
+    case 4:
+      Serial.println("case4");
+      analogWrite(pwmPin4, pwmVal);
+      if(speed>0){
+        digitalWrite(DIRA_4,HIGH);
+        digitalWrite(DIRB_4,LOW);
+      } else if(speed<0){
+        digitalWrite(DIRA_4,LOW);
+        digitalWrite(DIRB_4,HIGH);
+      } else{
+        digitalWrite(DIRA_4,LOW);
+        digitalWrite(DIRB_4,LOW);
+      }
+      break;
+  }
+}
+void MotorStop(){
+  SetMotorSpeed(1,0);
+  SetMotorSpeed(2,0);
+  SetMotorSpeed(3,0);
+  SetMotorSpeed(4,0);
+}
+bool MotorTest(){
+  while (true) {
+    SetMotorSpeed(1,10);
+    SetMotorSpeed(2,10);
+    SetMotorSpeed(3,10);
+    SetMotorSpeed(4,10);
+    delay(500);
+    SetMotorSpeed(1,-10);
+    SetMotorSpeed(2,-10);
+    SetMotorSpeed(3,-10);
+    SetMotorSpeed(4,-10);
+    delay(500);
+    return true;
   }
 }
