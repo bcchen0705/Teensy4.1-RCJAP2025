@@ -132,12 +132,10 @@ void linesensor(){
     if (buffer_index == 7) {
       buffer_index = 0;
       if (buffer[0] == 0xAA && buffer[0] == 0xAA && buffer[6] == 0xEE) {
-        lineData.state = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
         uint8_t checksum = (buffer[2] + buffer[3] + buffer[4]) & 0xFF;
         if (checksum == buffer[5]) {
             lineData.valid = true;
-            Serial.print("sensors: ");
-            Serial.println(lineData.state, BIN);
+            lineData.state = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
         }
       }
     }
