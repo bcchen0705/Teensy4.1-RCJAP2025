@@ -29,8 +29,8 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
-struct LineData {int data = 999; bool valid = false;} lineData;
-struct BallData {int data = 999; bool valid = false;} ballData;
+struct LineData {uint32_t data = 0xFFFF; bool valid = false;} lineData;
+struct BallData {uint8_t dis = 255; uint8_t dir = 255; bool valid = false;} ballData;
 /*
 void readBNO085Yaw(HardwareSerial &serial) {
   const int PACKET_SIZE = 19;
