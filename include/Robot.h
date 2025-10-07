@@ -155,8 +155,8 @@ void positionEst(){
     if (buffer_index == 4) {
       buffer_index = 0;
       if (buffer[0] == 0xAA && buffer[3] == 0xEE) {
-        position.x = buffer[1];
-        position.y = buffer[2];
+        position.x = buffer[1] - 127;
+        position.y = buffer[2] - 127;
       }
     }
   }
