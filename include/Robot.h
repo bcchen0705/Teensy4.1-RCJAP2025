@@ -264,9 +264,7 @@ void linesensor(){
     }
   }
 }
-/*Actuators Part*/
 
-   
 void showStart() {
   display.clearDisplay();
   display.setTextSize(2);
@@ -284,15 +282,16 @@ void showRunScreen() {
   display.display();
 }
 
-
-void showSensors(float gyro, int light, int ball) {
+void showSensors(float gyro, int ball, int light) {
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(0, 0);  display.print("Gyro: ");  display.println(gyro);
-  display.setCursor(0, 15); display.print("Light: "); display.println(light);
-  display.setCursor(0, 30); display.print("Ball: ");  display.println(ball);
+  display.setCursor(0, 15); display.print("Ball: ");  display.println(ball);
+  display.setCursor(0, 30); display.print("Light: "); display.println(light);
   display.display();
 }
+
+/*Actuators Part*/
 void SetMotorSpeed(uint8_t port, int8_t speed){
   speed = constrain(speed,-100,100);
   int pwmVal = abs(speed) * 255 / 100;
@@ -355,27 +354,12 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
       break;
   }
 }
+
 void MotorStop(){
   SetMotorSpeed(1,0);
   SetMotorSpeed(2,0);
   SetMotorSpeed(3,0);
   SetMotorSpeed(4,0);
-}
-
-bool MotorTest(){
-  //left rotation
-  SetMotorSpeed(1, 10);
-  SetMotorSpeed(2, 10);
-  SetMotorSpeed(3, 10);
-  SetMotorSpeed(4, 10);  
-  delay(1000);
-  SetMotorSpeed(1, 10);
-  SetMotorSpeed(2, 10);
-  SetMotorSpeed(3, 10);
-  SetMotorSpeed(4, 10); 
-  delay(1000);
-  //right rotation
-  return true;
 }
 
 void RobotIKControl(int8_t vx, int8_t vy, float omega){
