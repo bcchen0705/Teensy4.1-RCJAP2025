@@ -292,81 +292,74 @@ void showSensors(float gyro, int light, int ball) {
   display.setCursor(0, 15); display.print("Light: "); display.println(light);
   display.setCursor(0, 30); display.print("Ball: ");  display.println(ball);
   display.display();
-}  
-void SetMotorSpeed(uint8_t port, int8_t speed) {
-  // Clamp speed to -100..100
-  speed = constrain(speed, -100, 100);
-
-  // Map absolute speed to 0..255 for PWM
-  int pwmVal = map(abs(speed), 0, 100, 0, 255);
-  switch (port) {
-    case 1: // Motor 1
-      analogWrite(PWM_1, pwmVal);
-      if (speed > 0) {
-        digitalWrite(DIRA_1, HIGH);
-        digitalWrite(DIRB_1, LOW);
-      } else if (speed < 0) {
-        digitalWrite(DIRA_1, LOW);
-        digitalWrite(DIRB_1, HIGH);
-      } else {
-        digitalWrite(DIRA_1, LOW);
-        digitalWrite(DIRB_1, LOW);
+}
+void SetMotorSpeed(uint8_t port, int8_t speed){
+  speed = constrain(speed,-100,100);
+  int pwmVal = abs(speed) * 255 / 100;
+  switch (port){
+    case 1:
+      Serial.println("case1");
+      analogWrite(pwmPin1, pwmVal);
+      if(speed>0){
+        digitalWrite(DIRA_1,HIGH);
+        digitalWrite(DIRB_1,LOW);
+      } else if(speed<0){
+        digitalWrite(DIRA_1,LOW);
+        digitalWrite(DIRB_1,HIGH);
+      } else{
+        digitalWrite(DIRA_1,LOW);
+        digitalWrite(DIRB_1,LOW);
       }
       break;
-
-    case 2: // Motor 2
-      analogWrite(PWM_2, pwmVal);
-      if (speed > 0) {
-        digitalWrite(DIRA_2, HIGH);
-        digitalWrite(DIRB_2, LOW);
-      } else if (speed < 0) {
-        digitalWrite(DIRA_2, LOW);
-        digitalWrite(DIRB_2, HIGH);
-      } else {
-        digitalWrite(DIRA_2, LOW);
-        digitalWrite(DIRB_2, LOW);
+    case 2:
+      Serial.println("case2");
+      analogWrite(pwmPin2, pwmVal);
+      if(speed>0){
+        digitalWrite(DIRA_2,HIGH);
+        digitalWrite(DIRB_2,LOW);
+      } else if(speed<0){
+        digitalWrite(DIRA_2,LOW);
+        digitalWrite(DIRB_2,HIGH);
+      } else{
+        digitalWrite(DIRA_2,LOW);
+        digitalWrite(DIRB_2,LOW);
       }
       break;
-
-    case 3: // Motor 3
-      analogWrite(PWM_3, pwmVal);
-      if (speed > 0) {
-        digitalWrite(DIRA_3, HIGH);
-        digitalWrite(DIRB_3, LOW);
-      } else if (speed < 0) {
-        digitalWrite(DIRA_3, LOW);
-        digitalWrite(DIRB_3, HIGH);
-      } else {
-        digitalWrite(DIRA_3, LOW);
-        digitalWrite(DIRB_3, LOW);
+    case 3:
+      Serial.println("case3");
+      analogWrite(pwmPin3, pwmVal);
+      if(speed>0){
+        digitalWrite(DIRA_3,HIGH);
+        digitalWrite(DIRB_3,LOW);
+      } else if(speed<0){
+        digitalWrite(DIRA_3,LOW);
+        digitalWrite(DIRB_3,HIGH);
+      } else{
+        digitalWrite(DIRA_3,LOW);
+        digitalWrite(DIRB_3,LOW);
       }
       break;
-
-    case 4: // Motor 4
-      analogWrite(PWM_4, pwmVal);
-      if (speed > 0) {
-        digitalWrite(DIRA_4, HIGH);
-        digitalWrite(DIRB_4, LOW);
-      } else if (speed < 0) {
-        digitalWrite(DIRA_4, LOW);
-        digitalWrite(DIRB_4, HIGH);
-      } else {
-        digitalWrite(DIRA_4, LOW);
-        digitalWrite(DIRB_4, LOW);
+    case 4:
+      Serial.println("case4");
+      analogWrite(pwmPin4, pwmVal);
+      if(speed>0){
+        digitalWrite(DIRA_4,HIGH);
+        digitalWrite(DIRB_4,LOW);
+      } else if(speed<0){
+        digitalWrite(DIRA_4,LOW);
+        digitalWrite(DIRB_4,HIGH);
+      } else{
+        digitalWrite(DIRA_4,LOW);
+        digitalWrite(DIRB_4,LOW);
       }
-      break;
-
-    default:
-      // Invalid motor port
       break;
   }
 }
-
 void MotorStop(){
-  SetMotorSpeed(1, 0);
-  SetMotorSpeed(2, 0);
-  SetMotorSpeed(3, 0);
-  SetMotorSpeed(4, 0);  
+  SetMotorSpeed(1,0);
+  SetMotorSpeed(2,0);
+  SetMotorSpeed(3,0);
+  SetMotorSpeed(4,0);
 }
 
 bool MotorTest(){
@@ -383,11 +376,6 @@ bool MotorTest(){
   delay(1000);
   //right rotation
   return true;
-}
-
-//remove
-void RobotFKControl(){
-  ;
 }
 
 void RobotIKControl(int8_t vx, int8_t vy, float omega){
