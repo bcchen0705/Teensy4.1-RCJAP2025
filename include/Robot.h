@@ -143,7 +143,6 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
   int pwmVal = abs(speed) * 255 / 100;
   switch (port){
     case 1:
-      Serial.println("case1");
       analogWrite(pwmPin1, pwmVal);
       if(speed>0){
         digitalWrite(DIRA_1,HIGH);
@@ -157,7 +156,6 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
       }
       break;
     case 2:
-      Serial.println("case2");
       analogWrite(pwmPin2, pwmVal);
       if(speed>0){
         digitalWrite(DIRA_2,HIGH);
@@ -171,7 +169,6 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
       }
       break;
     case 3:
-      Serial.println("case3");
       analogWrite(pwmPin3, pwmVal);
       if(speed>0){
         digitalWrite(DIRA_3,HIGH);
@@ -185,7 +182,6 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
       }
       break;
     case 4:
-      Serial.println("case4");
       analogWrite(pwmPin4, pwmVal);
       if(speed>0){
         digitalWrite(DIRA_4,HIGH);
