@@ -31,6 +31,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
 struct LineData {uint32_t data = 0xFFFF; bool valid = false;} lineData;
 struct BallData {uint8_t dis = 255; uint8_t dir = 255; bool valid = false;} ballData;
+struct PosData {int8_t x = 0, int8_t y = 0;} position;
+
 /*
 void readBNO085Yaw(HardwareSerial &serial) {
   const int PACKET_SIZE = 19;
@@ -142,6 +144,24 @@ void linesensor(){
   }
 }
 
+void positionEst(){
+  uint8_t buffer_index = 0;
+  uint8_t buffer[4];
+  ballData.valid = false;
+  while (Serial3.available()){
+    uint8_t b = Serial3.read();
+    if ((buffer_index == 0 && b != 0xAA)) return; // wait for start
+    buffer[buffer_index++] = b;
+    if (buffer_index == 4) {
+      buffer_index = 0;
+      if (buffer[0] == 0xAA && buffer[3] == 0xEE) {
+        position.x = buffer[1];
+        position.y = buffer[2];
+      }
+    }
+  }
+}
+
 void showStart() {
   display.clearDisplay();
   display.setTextSize(2);
@@ -174,7 +194,6 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
   int pwmVal = abs(speed) * 255 / 100;
   switch (port){
     case 1:
-      Serial.println("case1");
       analogWrite(pwmPin1, pwmVal);
       if(speed>0){
         digitalWrite(DIRA_1,HIGH);
@@ -188,7 +207,6 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
       }
       break;
     case 2:
-      Serial.println("case2");
       analogWrite(pwmPin2, pwmVal);
       if(speed>0){
         digitalWrite(DIRA_2,HIGH);
@@ -202,7 +220,6 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
       }
       break;
     case 3:
-      Serial.println("case3");
       analogWrite(pwmPin3, pwmVal);
       if(speed>0){
         digitalWrite(DIRA_3,HIGH);
@@ -216,7 +233,6 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
       }
       break;
     case 4:
-      Serial.println("case4");
       analogWrite(pwmPin4, pwmVal);
       if(speed>0){
         digitalWrite(DIRA_4,HIGH);
