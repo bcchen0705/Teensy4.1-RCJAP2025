@@ -15,6 +15,11 @@ bool showRun  = false;
 
 
 void loop(){
+  
+  {
+    /* code */
+  }
+  
   int leftState  = digitalRead(BUTTON_LEFT);
   int rightState = digitalRead(BUTTON_RIGHT);
 
@@ -29,7 +34,7 @@ void loop(){
   lastLeftState = leftState;
 
   // ------------------ 右鍵在 Start 顯示 Run ------------------
-  if (rightState == LOW && lastRightState == HIGH && (millis() - lastPress) > 100) {
+  /*if (rightState == LOW && lastRightState == HIGH && (millis() - lastPress) > 100) {
     if (!showData) {  // 只有 Start 畫面生效
       showRun = !showRun;
       lastPress = millis();
@@ -37,7 +42,7 @@ void loop(){
       else showStart();
     }
   }
-  lastRightState = rightState;
+  lastRightState = rightState;*/
 
 
   // ------------------ Sensor ------------------
@@ -50,6 +55,53 @@ void loop(){
     Serial.print("ball_dir="); Serial.println(ballData.dir);
     lastUpdate = millis();
   }
+if (ballData.dir==3 || ballData.dir==4){
+  RobotIKControl (0,15,0);
+  }
+else if (ballData.dir==0||ballData.dir==2){
+  RobotIKControl (-15,0,0);
+}
+else if (ballData.dir==5||ballData.dir==7){
+  RobotIKControl (15,0,0); 
+}
+else if (ballData.dir==8|| ballData.dir==10||ballData.dir==13||ballData.dir==15){
+  RobotIKControl (0,-15,0);
+}
+else{ 
+  RobotIKControl (0,0,0);
+}
+/*switch (ballData.dir) {
+  case 3:
+  case 4:
+    RobotIKControl(0, 15, 0);
+    break;
+
+  case 0:
+  case 2:
+    RobotIKControl(15, 0, 0);
+    break;
+
+  case 5:
+  case 7:
+    RobotIKControl(-15, 0, 0);
+    break;
+
+  case 8:
+  case 10:
+  case 13:
+  case 15:
+    RobotIKControl(0, -15, 0);
+    break;
+
+  default:
+    RobotIKControl(0, 0, 0);
+    break;
+}
+*/
+
+
+
+
 }
 
 
