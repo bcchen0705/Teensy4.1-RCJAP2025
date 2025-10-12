@@ -29,9 +29,9 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
-struct LineData {uint32_t data = 0xFFFF; bool valid = false;} lineData;
+struct LineData {uint32_t state = 0xFFFF; bool valid = false;} lineData;
 struct BallData {uint8_t dis = 255; uint8_t dir = 255; bool valid = false;} ballData;
-struct PosData {int8_t x = 0, int8_t y = 0;} position;
+struct PosData {int8_t x = 0; int8_t y = 0;} position;
 
 /*
 void readBNO085Yaw(HardwareSerial &serial) {
@@ -79,6 +79,12 @@ void Robot_Init(){
   pinMode(pwmPin4,OUTPUT);
   pinMode(DIRA_4,OUTPUT);
   pinMode(DIRB_4,OUTPUT);
+
+  Wire.begin();
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  showStart();
 }
 
 
