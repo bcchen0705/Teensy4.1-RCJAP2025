@@ -55,6 +55,15 @@ void readBNO085Yaw(HardwareSerial &serial) {
     break;
   }
 }*/
+void showStart() {
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setCursor(0, 20);
+  display.println("Start");
+  display.display();
+}
+
+
 void Robot_Init(){
   Serial.begin(9600);
   Serial2.begin(115200);
@@ -166,14 +175,6 @@ void positionEst(){
       }
     }
   }
-}
-
-void showStart() {
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setCursor(0, 20);
-  display.println("Start");
-  display.display();
 }
 
 

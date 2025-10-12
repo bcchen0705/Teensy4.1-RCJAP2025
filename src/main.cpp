@@ -2,17 +2,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
+#include <Robot.h>
 
-// ------------------ OLED ------------------
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET -1
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-
-// ------------------ 按鍵 ------------------
-#define BUTTON_LEFT  31
-#define BUTTON_RIGHT 30
 bool showData = false;  // false = Start/Run, true = 顯示數據
 bool showRun  = false;
 
@@ -29,8 +20,6 @@ int lastLeftState  = HIGH;
 int lastRightState = HIGH;
 unsigned long lastPress = 0;
 unsigned long lastUpdate = 0;
-bool showData = false;  // false = Start/Run, true = 顯示數據
-bool showRun  = false;
 
 
 void loop(){
