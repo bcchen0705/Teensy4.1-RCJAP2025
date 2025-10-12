@@ -177,7 +177,6 @@ void positionEst(){
   }
 }
 
-
 void showRunScreen() {
   display.clearDisplay();
   display.setTextSize(2);
