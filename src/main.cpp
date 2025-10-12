@@ -1,4 +1,23 @@
-#include <Robot.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Arduino.h>
+
+// ------------------ OLED ------------------
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+
+// ------------------ 按鍵 ------------------
+#define BUTTON_LEFT  31
+#define BUTTON_RIGHT 30
+bool showData = false;  // false = Start/Run, true = 顯示數據
+bool showRun  = false;
+
+
+// ------------------ 模擬數據 ------------------
 int lightSensor = 999;
 int ballSensor  = 999;
 void setup(){
