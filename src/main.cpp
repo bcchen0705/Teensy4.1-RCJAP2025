@@ -1,113 +1,25 @@
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#include <Arduino.h>
-
-// ------------------ OLED ------------------
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET -1
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-
-// ------------------ 按鍵 ------------------
-#define BUTTON_LEFT  31
-#define BUTTON_RIGHT 30
-bool showData = false;  // false = Start/Run, true = 顯示數據
-bool showRun  = false;
-
-
-// ------------------ 模擬數據 ------------------
+#include <Robot.h>
 int lightSensor = 999;
 int ballSensor  = 999;
-float gyroYaw   = 0;
-
-
-// ------------------ OLED 顯示函式 ------------------
-void showStart() {
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setCursor(0, 20);
-  display.println("Start");
-  display.display();
+void setup(){
+    Robot_Init();
+    showStart();
 }
 
-
-void showRunScreen() {
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setCursor(0, 20);
-  display.println("Run");
-  display.display();
-}
-
-
-void showSensors(float gyro, int light, int ball) {
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0, 0);  display.print("Gyro: ");  display.println(gyro);
-  display.setCursor(0, 15); display.print("Light: "); display.println(light);
-  display.setCursor(0, 30); display.print("Ball: ");  display.println(ball);
-  display.display();
-}
-
-
-// ------------------ BNO085 UART ------------------
-#define BNO_BAUD 115200
-#define BNO_RX 7  // Teensy 4.1 RX7 -> Serial2
-
-
-// ------------------ setup ------------------
-void setup() {
-  pinMode(BUTTON_LEFT, INPUT_PULLUP);
-  pinMode(BUTTON_RIGHT, INPUT_PULLUP);
-
-
-  Serial.begin(115200);
-  Serial2.begin(BNO_BAUD); // BNO085 UART
-
-
-  Wire.begin();
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
-
-
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
-  showStart();
-}
-
-
-// ------------------ loop ------------------
 int lastLeftState  = HIGH;
 int lastRightState = HIGH;
 unsigned long lastPress = 0;
 unsigned long lastUpdate = 0;
+bool showData = false;  // false = Start/Run, true = 顯示數據
+bool showRun  = false;
 
 
-// 解析 BNO085 UART (簡單讀 Yaw)
-void readBNO085Yaw() {
-  const int PACKET_SIZE = 19;
-  uint8_t buffer[PACKET_SIZE];
-
-
-  while (Serial2.available() >= PACKET_SIZE) {
-    buffer[0] = Serial2.read();
-    if (buffer[0] != 0xAA) continue;
-    buffer[1] = Serial2.read();
-    if (buffer[1] != 0xAA) continue;
-
-
-    for (int i = 2; i < PACKET_SIZE; i++) buffer[i] = Serial2.read();
-
-
-    int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
-    gyroYaw = yaw_raw * 0.01f; // 轉成度
-    break;
+void loop(){
+  
+  {
+    /* code */
   }
-}
-
-
-void loop() {
+  
   int leftState  = digitalRead(BUTTON_LEFT);
   int rightState = digitalRead(BUTTON_RIGHT);
 
@@ -121,9 +33,8 @@ void loop() {
   }
   lastLeftState = leftState;
 
-
   // ------------------ 右鍵在 Start 顯示 Run ------------------
-  if (rightState == LOW && lastRightState == HIGH && (millis() - lastPress) > 100) {
+  /*if (rightState == LOW && lastRightState == HIGH && (millis() - lastPress) > 100) {
     if (!showData) {  // 只有 Start 畫面生效
       showRun = !showRun;
       lastPress = millis();
@@ -131,16 +42,69 @@ void loop() {
       else showStart();
     }
   }
-  lastRightState = rightState;
+  lastRightState = rightState;*/
 
 
-  // ------------------ 讀取 BNO085 Gyro ------------------
+  // ------------------ Sensor ------------------
   readBNO085Yaw();
-
+  ballsensor();
 
   // ------------------ 顯示 Data 畫面 ------------------
   if (showData && (millis() - lastUpdate > 200)) {
-    showSensors(gyroYaw, lightSensor, ballSensor);
+    showSensors(gyroData.heading, ballData.dir, ballSensor);
+    Serial.print("ball_dir="); Serial.println(ballData.dir);
     lastUpdate = millis();
   }
+if (ballData.dir==3 || ballData.dir==4){
+  RobotIKControl (0,15,0);
+  }
+else if (ballData.dir==0||ballData.dir==2){
+  RobotIKControl (-15,0,0);
+}
+else if (ballData.dir==5||ballData.dir==7){
+  RobotIKControl (15,0,0); 
+}
+else if (ballData.dir==8|| ballData.dir==10||ballData.dir==13||ballData.dir==15){
+  RobotIKControl (0,-15,0);
+}
+else{ 
+  RobotIKControl (0,0,0);
+}
+/*switch (ballData.dir) {
+  case 3:
+  case 4:
+    RobotIKControl(0, 15, 0);
+    break;
+
+  case 0:
+  case 2:
+    RobotIKControl(15, 0, 0);
+    break;
+
+  case 5:
+  case 7:
+    RobotIKControl(-15, 0, 0);
+    break;
+
+  case 8:
+  case 10:
+  case 13:
+  case 15:
+    RobotIKControl(0, -15, 0);
+    break;
+
+  default:
+    RobotIKControl(0, 0, 0);
+    break;
+}
+*/
+
+
+
+
+}
+
+
+void robot_attack(){
+  ;
 }

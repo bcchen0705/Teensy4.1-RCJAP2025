@@ -1,30 +1,22 @@
 #include <Arduino.h>
-#include "Robot.h"
-
-void setup(){
-  Robot_Init();
-}
-
-void loop(){
-  MotorTest();
-}
-
 /*
+const int pwmPin = 23;     // PWM 控制腳
+const int dirPin1 = 36;    // 方向控制腳1
+const int dirPin2 = 37;    // 方向控制腳2
+*/
 const int pwmPin = 2;     // PWM 控制腳
 const int dirPin1 = 3;    // 方向控制腳1
-const int dirPin2 = 4; 
+const int dirPin2 = 4;    // 方向控制腳2
 
-const int pwmPin1 = 23;    // PWM 控制腳
-const int dirPin3 = 36;    // 方向控制腳1
-const int dirPin4 =37;
-const int maxSpeed = 150;  // 最大速度
-const int stepDelay = 10;  // 加速/減速延遲(ms)
+const int maxSpeed = 100;  // 最大速度
+const int stepDelay = 100;  // 加速/減速延遲(ms)
 
 void setup() {
   pinMode(pwmPin, OUTPUT);
   pinMode(dirPin1, OUTPUT);
   pinMode(dirPin2, OUTPUT);
-
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
   // 一開始停住
   digitalWrite(dirPin1, LOW);
   digitalWrite(dirPin2, LOW);
@@ -46,9 +38,15 @@ void loop() {
   // 正轉加速
   digitalWrite(dirPin1, HIGH);
   digitalWrite(dirPin2, LOW);
+<<<<<<< HEAD:src/PWM/motor_test.cpp
   digitalWrite(dirPin3, HIGH);
   digitalWrite(dirPin4, LOW);
   for(int speed = 0; speed <= maxSpeed; speed++) {
+=======
+  for(int speed = 10; speed <= maxSpeed; speed++) {
+    Serial.print("+");
+    Serial.println(speed);
+>>>>>>> alpha:src/PWM_Motor/motor_test.cpp
     analogWrite(pwmPin, speed);
     analogWrite(pwmPin1, speed);
     delay(stepDelay);
@@ -67,9 +65,9 @@ void loop() {
   // 反轉加速
   digitalWrite(dirPin1, LOW);
   digitalWrite(dirPin2, HIGH);
-  digitalWrite(dirPin3, LOW);
-  digitalWrite(dirPin4, HIGH);
-  for(int speed = 0; speed <= maxSpeed; speed++) {
+  for(int speed = 10; speed <= maxSpeed; speed++) {
+    Serial.print("-");
+    Serial.println(speed);
     analogWrite(pwmPin, speed);
     analogWrite(pwmPin1, speed);
     delay(stepDelay);
