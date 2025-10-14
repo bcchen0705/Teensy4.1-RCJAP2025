@@ -255,18 +255,18 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
 }
 
 void MotorStop(){
-    digitalWrite(DIRA_1,LOW);
-    digitalWrite(DIRB_1,LOW);
-    digitalWrite(DIRA_2,LOW);
-    digitalWrite(DIRB_2,LOW);
-    digitalWrite(DIRA_3,LOW);
-    digitalWrite(DIRB_3,LOW);
-    digitalWrite(DIRA_4,LOW);
-    digitalWrite(DIRB_4,LOW);
-    analogWrite(pwmPin1, 0);
-    analogWrite(pwmPin2, 0);
-    analogWrite(pwmPin3, 0);
-    analogWrite(pwmPin4, 0);
+  digitalWrite(DIRA_1,LOW);
+  digitalWrite(DIRB_1,LOW);
+  digitalWrite(DIRA_2,LOW);
+  digitalWrite(DIRB_2,LOW);
+  digitalWrite(DIRA_3,LOW);
+  digitalWrite(DIRB_3,LOW);
+  digitalWrite(DIRA_4,LOW);
+  digitalWrite(DIRB_4,LOW);
+  analogWrite(pwmPin1, 0);
+  analogWrite(pwmPin2, 0);
+  analogWrite(pwmPin3, 0);
+  analogWrite(pwmPin4, 0);
 }
 
 void RobotIKControl(int8_t vx, int8_t vy, float omega){
