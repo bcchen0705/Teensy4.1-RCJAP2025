@@ -9,8 +9,12 @@
 const int Pin=41;
 const int Pin1=40;
 const int Pin2=39;
-volatile bool touch = false;
-void stop();
+volatile bool lefttouch = false;
+volatile bool righttouch = false;
+volatile bool backtouch = false;
+void backsensor();
+void leftsensor();
+void rightsensor();
 
 
 void setup() {
@@ -18,9 +22,9 @@ void setup() {
     pinMode(Pin1,INPUT_PULLUP);
     pinMode(Pin2,INPUT_PULLUP);
 
-    attachInterrupt(digitalPinToInterrupt(Pin), stop,RISING);
-    attachInterrupt(digitalPinToInterrupt(Pin1), stop,RISING);
-    attachInterrupt(digitalPinToInterrupt(Pin2), stop,RISING);
+    attachInterrupt(digitalPinToInterrupt(Pin), backsensor,RISING);
+    attachInterrupt(digitalPinToInterrupt(Pin1), leftsensor,RISING);
+    attachInterrupt(digitalPinToInterrupt(Pin2), rightsensor,RISING);
 
     Robot_Init();
     
@@ -37,15 +41,44 @@ void loop() {
   delay(500); // 每 0.5 秒讀一次
   */
  readBNO085Yaw();
- if(touch){
+ if(backtouch==true){
+    Serial.println("forward");
+    Vector_Motion(0, 10);
+    if(digitalRead(Pin)==0){
+        Serial.println("stop");
+        Vector_Motion(0, 0);
+        backtouch=false;
+    }
+ }
+ else if (lefttouch==true){
+    Serial.println("left");
+    Vector_Motion(10, 0);
+    if(digitalRead(Pin1)==0){
+        Serial.println("stop");
+        Vector_Motion(0, 0);
+        lefttouch=false;
+    }
+ }
+ else if (righttouch==true){
+    Serial.println("right");
+    Vector_Motion(-10, 0);
+    if(digitalRead(Pin2)==0){
+        Serial.println("stop");
+        Vector_Motion(0, 0);
+        righttouch=false;
+    }
+ }
+ else{
     Serial.println("stop");
     Vector_Motion(0, 0);
  }
- else{
-    Serial.println("running");
-    Vector_Motion(30, 0);
- }
 }
-void stop() {
-  touch=true;
+void backsensor() {
+  backtouch=true;
+}
+void leftsensor() {
+  lefttouch=true;
+}
+void rightsensor() { 
+  righttouch=true;
 }
