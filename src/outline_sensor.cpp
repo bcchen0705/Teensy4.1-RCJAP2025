@@ -14,18 +14,15 @@ void stop();
 
 
 void setup() {
-    pinMode(Pin,INPUT_PULLUP);
-    pinMode(Pin1,INPUT_PULLUP);
-    pinMode(Pin2,INPUT_PULLUP);
-
-    attachInterrupt(digitalPinToInterrupt(Pin), stop,RISING);
-    attachInterrupt(digitalPinToInterrupt(Pin1), stop,RISING);
-    attachInterrupt(digitalPinToInterrupt(Pin2), stop,RISING);
-
-    Robot_Init();
-    
-    Serial.begin(9600);
-    }
+  pinMode(Pin,INPUT_PULLUP);
+  pinMode(Pin1,INPUT_PULLUP);
+  pinMode(Pin2,INPUT_PULLUP);
+  Serial.begin(9600);
+  
+  attachInterrupt(digitalPinToInterrupt(Pin), stop,RISING);
+  attachInterrupt(digitalPinToInterrupt(Pin1), stop,RISING);
+  attachInterrupt(digitalPinToInterrupt(Pin2), stop,RISING);
+}
 
 void loop() {
   /*Serial.println("Pin");
@@ -34,17 +31,20 @@ void loop() {
   Serial.println(digitalRead(Pin1));
   Serial.println("Pin2");
   Serial.println(digitalRead(Pin2));
+ 
+
+
   delay(500); // 每 0.5 秒讀一次
   */
- readBNO085Yaw();
  if(touch){
-    Serial.println("stop");
-    Vector_Motion(0, 0);
+  Serial.println("stop");
  }
  else{
-    Serial.println("running");
-    Vector_Motion(30, 0);
+  Serial.println("running");
  }
+
+ delay(500);
+ touch = false;
 }
 void stop() {
   touch=true;

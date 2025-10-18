@@ -7,7 +7,6 @@
 bool showData = false;  // false = Start/Run, true = 顯示數據
 bool showRun  = false;
 
-
 // ------------------ 模擬數據 ------------------
 int lightSensor = 999;
 int ballSensor  = 999;
