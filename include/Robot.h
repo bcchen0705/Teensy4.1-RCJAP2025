@@ -53,7 +53,9 @@ struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
 struct LineData {uint32_t state = 0xFFFF; bool valid = false;} lineData;
 struct BallData {uint8_t dis = 255; uint8_t dir = 255; bool valid = false;} ballData;
 struct PosData {int8_t x = 0; int8_t y = 0;} position;
-
+float ballDegreelist[16]={
+  22.5,45,67.5,87.5,92.5,112.5,135,157.5,202.5,225,247.5,265,275,292.5,315,337.5
+};
 // --- ROBOT CONTROL STRUCT (New: For P-control state) ---
 struct RobotControl {
     float robot_heading = 90.0;        // Target heading
@@ -165,32 +167,30 @@ void readBNO085Yaw() {
 }
 
 
-void ballsensor(){
-  uint8_t buffer_index = 0;
-  uint8_t buffer[3];
+void ballsensor() {
+  // 發送請求封包，通知感測器回傳資料
+  uint8_t b[3];
   ballData.valid = false;
-  while (Serial4.available()){
-    uint8_t b = Serial4.read();
-    if(b == 0xFF){
+
+  Serial4.write(0xBB);
+  while(!Serial4.available());
+  Serial4.readBytes(b,3);
+  if(b[1]==0xFF){
       ballData.valid = false;
       ballData.dir = 255;
       ballData.dis = 255;
-      break;
-    }
-    if ((buffer_index == 0 && b != 0xAA)) continue; // wait for start
-    buffer[buffer_index++] = b;
-    if (buffer_index == 3) {
-      buffer_index = 0;
-      if (buffer[0] == 0xAA && buffer[2] == 0xEE) {
-        uint8_t temp = buffer[1];
-        ballData.valid = true;
-        ballData.dir = (temp & 0x0F);
-        ballData.dis = (temp & 0xF0) >> 4;
-      }
-    }
+  }
+  else if (b[0]==0xAA){
+    Serial.println(b[1],HEX);
+    uint8_t temp =b[1];
+    ballData.valid = true;
+    ballData.dir = (temp & 0x0F);
+    ballData.dis = (temp & 0xF0)>>4;
+  }
+  else{
+    ballData.valid = false;
   }
 }
-
 void linesensor(){
   uint8_t buffer_index = 0;
   uint8_t buffer[7];
