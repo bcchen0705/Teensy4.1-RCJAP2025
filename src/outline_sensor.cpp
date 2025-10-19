@@ -28,14 +28,16 @@ void loop() {
   /*Serial.println("Pin");
   Serial.println(digitalRead(Pin));
   Serial.println("Pin1");
-  Serial.println(digitalRead(Pin1));
+  Serial.println(digitalRead(Pin1));*/
   Serial.println("Pin2");
+    
+  Serial.println(analogRead(Pin2));
   Serial.println(digitalRead(Pin2));
  
 
 
   delay(500); // 每 0.5 秒讀一次
-  */
+
  if(touch){
   Serial.println("stop");
  }
@@ -44,7 +46,6 @@ void loop() {
  }
 
  delay(500);
- touch = false;
 }
 void stop() {
   touch=true;

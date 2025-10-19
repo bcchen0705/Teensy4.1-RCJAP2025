@@ -86,30 +86,23 @@ void loop(){
         Vx = 20 * cos(moving_Degree* DtoR_const );
         Vy = 20 * sin( moving_Degree * DtoR_const );
 
-        if (righttouch && Vx > 0) {
-            Vx = 0;
-            if(digitalRead(Pin)==0){
-                backtouch = false;
-            }
-        }
-        if (lefttouch && Vx < 0)  {
-            Vx = 0;
-            if(digitalRead(Pin1)==0){
-                lefttouch = false;
-            }
-        }
-        if (backtouch && Vy < 0)  {
-            Vy = 0;
-            if(digitalRead(Pin2)==0){
-                righttouch = false;}
-        }
+        if (backtouch && Vy < 0) {Vy = 0;}
+        if (lefttouch && Vx < 0)  {Vx = 0;}
+        if (righttouch && Vx > 0)  {Vx = 0;}
+
 
         Vector_Motion( int(Vx) , int(Vy) );
-        
-        
-        
     }
     //delay(1000);
+    if(digitalRead(Pin)==0){
+            backtouch = false;
+        }
+    if(digitalRead(Pin1)==0){
+            lefttouch = false;
+        }
+    if(digitalRead(Pin2)==0){
+            righttouch = false;
+        }
 }
 void back() {
   backtouch = true;
