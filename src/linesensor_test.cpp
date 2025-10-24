@@ -40,7 +40,8 @@ void loop(){
     linesensor();
     if(ballData.dir == 255){
         Serial.println("No ball detected");
-        Vector_Motion(0, 0);  // 停止動作
+        ballVx = 0;
+        ballVy = 0;
     }
     else{
         float ballDegree = ballDegreelist[ballData.dir];
@@ -49,24 +50,24 @@ void loop(){
         Serial.print("balldir=");Serial.println(ballData.dir);
         Serial.print("ballDegree=");Serial.println(ballDegree);
         Serial.print("ballData.dis=");Serial.println(ballData.dis);
-        Serial.print("exp");Serial.println(exp(-0.75*ballData.dis));
+        Serial.print("exp");Serial.println(exp(-0.55*(ballData.dis-7)));
+        //delay(2000);    
 
-        map(ballData.dis,0,12,0,10); 
+        map(ballData.dis,1,12,0,10); 
 
-        if((ballDegree >= 22.5 && ballDegree < 87.5) || (ballDegree > 92.5 && ballDegree <= 167.5) ){
-            offset = 90*(exp(-0.75*(ballData.dis-4)));            
-            offset = (ballDegree > 90 ) ? offset : -offset;
-            Serial.print("offset="); Serial.println(offset);
-        }
-
-        else if( ballDegree == 87.5 || ballDegree == 92.5){
+        if( ballDegree == 87.5 || ballDegree == 92.5){
             offset = 0;
         }
 
-        else if(ballDegree > 167.5 && ballDegree < 385.5){
-            offset = 90*(exp(-0.75*(ballData.dis-7)));            
-            offset = (ballDegree < 270 ) ? offset : -offset;    
-            Serial.print("offset="); Serial.println(offset);           
+        else {
+            
+            double offsetRatio = exp(-0.55*(ballData.dis-7));
+            offsetRatio = (exp(-0.55*(ballData.dis-7)) > 1 ) ? 1 : offsetRatio ;
+            offset = 90*offsetRatio;      
+            offset = (ballDegree > 90 ) ? offset : -offset;
+            offset = (ballDegree < 270 ) ? offset : -offset;
+            Serial.print("offset="); Serial.println(offset);
+
         }
 
         float moving_Degree = ballDegree + offset;
@@ -74,16 +75,16 @@ void loop(){
         
         ballVx = 20 * cos(moving_Degree* DtoR_const );
         ballVy = 20 * sin( moving_Degree * DtoR_const );
-
+    }
     float sumX = 0, sumY = 0;
     int count = 0;
-    Serial.print("lineData.state=");
-    Serial.println(lineData.state, BIN);
+    //Serial.print("lineData.state=");
+    //Serial.println(lineData.state, BIN);
 
     for (int i = 0; i < 18; i++) {
         bool detected = ((lineData.state & (1UL << i)) == 0); // 0 表有線
-        Serial.print("Sensor "); Serial.print(i);
-        Serial.print(": "); Serial.println(detected ? "ON line" : "OFF line");
+        //Serial.print("Sensor "); Serial.print(i);
+        //Serial.print(": "); Serial.println(detected ? "ON line" : "OFF line");
         if (detected) {
             float deg = linesensorDegreelist[i] + 180;
             if (deg >= 360) deg -= 360;
@@ -99,15 +100,15 @@ void loop(){
         float lineDegree = atan2(sumY, sumX) * RtoD_const;
         if (lineDegree < 0) lineDegree += 360;
 
-        Serial.print("sumX="); Serial.print(sumX);
-        Serial.print(", sumY="); Serial.print(sumY);
-        Serial.print(", average lineDegree="); Serial.println(lineDegree);
+        //Serial.print("sumX="); Serial.print(sumX);
+        //Serial.print(", sumY="); Serial.print(sumY);
+        //Serial.print(", average lineDegree="); Serial.println(lineDegree);
 
         float speed = 20;
         lineVx = speed * cos(lineDegree*DtoR_const);
         lineVy = speed * sin(lineDegree*DtoR_const);
-        Serial.print("lineVx="); Serial.print(lineVx);
-        Serial.print("lineVy="); Serial.println(lineVy);
+        //Serial.print("lineVx="); Serial.print(lineVx);
+        //Serial.print("lineVy="); Serial.println(lineVy);
     }
     else{
         lineVx=0;
@@ -122,8 +123,8 @@ void loop(){
 
     Vector_Motion(int(finalVx), int(finalVy));
 
-    Serial.print("finalVx="); Serial.print(finalVx);
-    Serial.print("finalVy="); Serial.println(finalVy);
+    //Serial.print("finalVx="); Serial.print(finalVx);
+    //Serial.print("finalVy="); Serial.println(finalVy);
 
 
     if(digitalRead(Pin)==0){
@@ -132,8 +133,7 @@ void loop(){
         lefttouch = false;}
     if(digitalRead(Pin2)==0){
         righttouch = false;}
-    delay(1000);
-}
+    //delay(1000);
 }
 void back() {
 backtouch = true;
