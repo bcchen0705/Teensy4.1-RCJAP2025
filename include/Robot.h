@@ -56,6 +56,9 @@ struct PosData {int8_t x = 0; int8_t y = 0;} position;
 float ballDegreelist[16]={
   22.5,45,67.5,87.5,92.5,112.5,135,157.5,202.5,225,247.5,265,275,292.5,315,337.5
 };
+float linesensorDegreelist[18]={
+  10,30,50,70,90,110,130,150,170,190,210,230,250,270,290,310,330
+};
 // --- ROBOT CONTROL STRUCT (New: For P-control state) ---
 struct RobotControl {
     float robot_heading = 90.0;        // Target heading
@@ -191,25 +194,28 @@ void ballsensor() {
     ballData.valid = false;
   }
 }
+
 void linesensor(){
-  uint8_t buffer_index = 0;
   uint8_t buffer[7];
+  Serial5.write(0xdd);
+
+  while(!Serial5.available());
+  Serial5.readBytes(buffer,7);
+    // Serial.println(b[1], HEX);
+    
   lineData.valid = false;
-  while (Serial5.available()) {
-    uint8_t b = Serial5.read();
-    if (buffer_index == 0 && b != 0xAA) return; // wait for start
-    buffer[buffer_index++] = b;
-    if (buffer_index == 7) {
-      buffer_index = 0;
+
+  if (buffer[0] != 0xaa) return;
       // Corrected original logic for safety (removed redundant buffer[0] check)
-      if (buffer[0] == 0xAA && buffer[6] == 0xEE) { 
-        uint8_t checksum = (buffer[2] + buffer[3] + buffer[4]) & 0xFF;
-        if (checksum == buffer[5]) {
-            lineData.valid = true;
-            lineData.state = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
-        }
+  if (buffer[0] == 0xAA && buffer[6] == 0xEE) {
+      uint8_t checksum = (buffer[1] + buffer[2] + buffer[3] + buffer[4]) & 0xFF;
+
+      if (checksum == buffer[5]) {
+          lineData.valid = true;
+          lineData.state = buffer[1] | (buffer[2] << 8) | (buffer[3] << 16) | (buffer[4] << 24);
+      } else {
+          lineData.valid = false;  // checksum error
       }
-    }
   }
 }
 
@@ -396,10 +402,6 @@ void Degree_Motion(float moving_degree, int8_t speed) {
 // which will call Robot_Init() and the sensor/motion functions respectively.
 
 
-void update_robot_heading(){
-    ;
-}
+void update_robot_heading();
 
-void kick() {
-    ;
-}
+void kick(); 

@@ -92,6 +92,7 @@ void loop(){
 
 
         Vector_Motion( int(Vx) , int(Vy) );
+        
     }
     //delay(1000);
     if(digitalRead(Pin)==0){
