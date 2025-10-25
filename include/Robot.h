@@ -77,6 +77,7 @@ void ballsensor();
 void linesensor();
 void positionEst();
 void showStart();
+void showLine();
 void showRunScreen();
 void showSensors(float gyro, int ball, int light);
 void SetMotorSpeed(uint8_t port, int8_t speed);
@@ -242,6 +243,22 @@ void showStart() {
   display.setTextSize(2);
   display.setCursor(0, 20);
   display.println("Start");
+  display.display();
+}
+
+void showLine() {
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setCursor(0, 20);
+  display.println("Line");
+  display.display();
+}
+
+void showEmergency() {
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setCursor(0, 20);
+  display.println("Emergency!");
   display.display();
 }
 
