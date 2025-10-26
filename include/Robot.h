@@ -114,6 +114,9 @@ void Robot_Init(){
   pinMode(DIRA_3,OUTPUT);
   pinMode(DIRB_3,OUTPUT);
 
+  pinMode(BUTTON_LEFT, INPUT_PULLUP);
+  pinMode(BUTTON_RIGHT, INPUT_PULLUP);
+
   pinMode(pwmPin4,OUTPUT);
   pinMode(DIRA_4,OUTPUT);
   pinMode(DIRB_4,OUTPUT);
@@ -157,8 +160,8 @@ void readBNO085Yaw() {
     // --- Extract yaw (Little Endian) ---
     int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
 
-    Serial.print("yaw_raw: ");
-    Serial.println(yaw_raw);
+    //Serial.print("yaw_raw: ");
+    //Serial.println(yaw_raw);
 
     // Convert to degrees if within range
     if (abs(yaw_raw) <= 18000) {
@@ -214,10 +217,16 @@ void linesensor(){
       if (checksum == buffer[5]) {
           lineData.valid = true;
           lineData.state = buffer[1] | (buffer[2] << 8) | (buffer[3] << 16) | (buffer[4] << 24);
+                   
+        if(lineData.state != 0b111111111111111111) {
+          Vector_Motion(0,0);  // Stop robot if line detected
+        }
+        lineData.valid = false;  // No line detected
+      }
       } else {
           lineData.valid = false;  // checksum error
       }
-  }
+  
 }
 
 void positionEst(){

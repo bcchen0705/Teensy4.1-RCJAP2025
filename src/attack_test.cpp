@@ -19,9 +19,15 @@ float ballVy = 0;
 float lineVx = 0;
 float lineVy = 0;
 
-const float EMERGENCY_THRESHOLD = 80; 
-float prev_lineDegree = -1;    
+int count = 0;
+float x = 1.5;
+const float EMERGENCY_THRESHOLD = 90.0; 
+float init_lineDegree = -1;
+float diff = 0;    
 bool emergency = false;
+bool start = false;
+bool overhalf = false;
+bool first_detect = false;
 
 void back();
 void left();
@@ -68,7 +74,7 @@ void loop(){
             
             double offsetRatio = exp(-0.55*(ballData.dis-7));
             offsetRatio = (exp(-0.55*(ballData.dis-7)) > 1 ) ? 1 : offsetRatio ;
-            offset = 100*offsetRatio;      
+            offset = 95*offsetRatio;      
             offset = (ballDegree > 90 ) ? offset : -offset;
             offset = (ballDegree < 270 ) ? offset : -offset;
             Serial.print("offset="); Serial.println(offset);
@@ -78,14 +84,14 @@ void loop(){
         float moving_Degree = ballDegree + offset;
         Serial.print("moving_Degree="); Serial.println(moving_Degree);
         
-        float ballspeed = map(ballData.dis,7,12,15,35);
-        ballspeed = constrain(ballspeed,15,35);
+        float ballspeed = map(ballData.dis,0,12,20,50);
+        ballspeed = constrain(ballspeed,20,50);
         Serial.print("BallSpeed="); Serial.println(ballspeed);
         ballVx = ballspeed * cos(moving_Degree* DtoR_const );
         ballVy = ballspeed * sin( moving_Degree * DtoR_const );
     }
     float sumX = 0, sumY = 0;
-    int count = 0;
+    
     //Serial.print("lineData.state=");
     //Serial.println(lineData.state, BIN);
 
@@ -94,7 +100,7 @@ void loop(){
         //Serial.print("Sensor "); Serial.print(i);
         //Serial.print(": "); Serial.println(detected ? "ON line" : "OFF line");
         if (detected) {
-            float deg = linesensorDegreelist[i] + 180;
+            float deg = linesensorDegreelist[i];
             if (deg >= 360) deg -= 360;
 
             //Serial.print("  deg +180 = "); Serial.println(deg);
@@ -104,43 +110,69 @@ void loop(){
             count++;
         }
     }
-    float diff = 0;
-    if (count > 0) {
+    if(lineData.state == 0b111111111111111111 && !overhalf && count > 0){//no line
+                count = 0;
+                lineVx = 0;
+                lineVy = 0;
+                first_detect = false;
+                init_lineDegree = -1;
+                Serial.print("!!!!!!!!!!!!!!!!RESET1!!!!!!!!!!!!!!!!!!");
+        }
+    if(!lineData.state == 0x00000000) {
+        MotorStop();    
+    }
+
+            
+    if (count > 0 || overhalf) {
         float lineDegree = atan2(sumY, sumX) * RtoD_const;
-        if (lineDegree < 0) lineDegree += 360;
-        showLine();
+        if (lineDegree < 0) {
+            lineDegree += 360; 
+        }
+        if(start){
+                showLine();
+                start = false;
+            }
         //Serial.print("sumX="); Serial.print(sumX);
         //Serial.print(", sumY="); Serial.print(sumY);
         //Serial.print(", average lineDegree="); Serial.println(lineDegree);
-        if(prev_lineDegree >= 0){
-        diff = fabs(fmod((lineDegree - prev_lineDegree + 180), 360) - 180);
-        
+        if(first_detect == false){
+            init_lineDegree = lineDegree;
+            first_detect = true;
         }
-        prev_lineDegree = lineDegree;
         
-       
+        diff = fabs(fmod((lineDegree - init_lineDegree), 360));
         float finalDegree;
         if(diff > EMERGENCY_THRESHOLD){
+            overhalf = true;
             finalDegree = lineDegree;
-            showEmergency();
+            Serial.println("EMERGENCY");
         }
         else{
+            overhalf = false;
             finalDegree = fmod(lineDegree + 180, 360);
+            //delay(1000);
         }
-        float speed = 40;
+        Serial.print("lineDegree="); Serial.println(lineDegree);
+        Serial.print("finalDegree="); Serial.println(finalDegree);
+        Serial.print("first_detect"); Serial.println(first_detect);
+        float speed = 50;
         lineVx = speed * cos(finalDegree*DtoR_const);
         lineVy = speed * sin(finalDegree*DtoR_const);
         
         //Serial.print("lineVx="); Serial.print(lineVx);
         //Serial.print("lineVy="); Serial.println(lineVy);
     }
+
     else{
         lineVx=0;
         lineVy=0;
-        showStart();
+        if(!start){
+            showStart();
+            start = true;
+        }
     }
-    float finalVx = ballVx + lineVx;
-    float finalVy = ballVy + lineVy;
+    float finalVx = (lineVx) ? lineVx * x : ballVx + lineVx;
+    float finalVy = (lineVy) ? lineVy * x : ballVy + lineVy;
 
     if (backtouch && finalVy < 0) {finalVy = 0;}
     if (lefttouch && finalVx < 0)  {finalVx = 0;}
@@ -148,8 +180,8 @@ void loop(){
 
     Vector_Motion(int(finalVx), int(finalVy));
 
-    //Serial.print("finalVx="); Serial.print(finalVx);
-    //Serial.print("finalVy="); Serial.println(finalVy);
+    Serial.print("finalVx="); Serial.print(finalVx);
+    Serial.print("finalVy="); Serial.println(finalVy);
 
 
     if(digitalRead(Pin)==0){
@@ -169,3 +201,42 @@ lefttouch = true;
 void right() {
 righttouch = true;
 }
+
+/*
+ls_state = lineData.state;
+Serial.print("ls_state=");
+Serial.println(ls_state,BIN);
+init_direction = -1;
+first_detect = false;
+if(ls_state == 0b111111111111111111){//no line
+    if(overhalf != true){
+        overhalf = false;
+        lineVx = 0;
+        lineVy = 0;
+        first_detect = false;
+        init_direction = -1;
+        overhalf = false;
+    }
+}
+else{//detected
+    if(first_detect == false){
+        init_direction = line_degree;
+        first_detect = true;
+    }
+
+    if(///){
+        overhalf = true;
+    }
+
+
+}
+
+
+
+
+
+
+
+
+
+*/

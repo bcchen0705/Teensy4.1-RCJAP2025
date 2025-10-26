@@ -3,115 +3,311 @@
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
 #include <Robot.h>
+#include <math.h>
+#define RtoD_const 57.2958
 
-bool showData = false;  // false = Start/Run, true = 顯示數據
-bool showRun  = false;
+const int Pin = 41;
+const int Pin1 = 40;
+const int Pin2 = 39;
 
-// ------------------ 模擬數據 ------------------
-int lightSensor = 999;
-int ballSensor  = 999;
-void setup(){
-    Robot_Init();
-    showStart();
-}
+volatile bool backtouch = false;
+volatile bool lefttouch = false;
+volatile bool righttouch = false;
 
-int lastLeftState  = HIGH;
+float ballVx = 0;
+float ballVy = 0;
+float lineVx = 0;
+float lineVy = 0;
+
+int count = 0;
+float x = 2;
+const float EMERGENCY_THRESHOLD = 80.0;
+float init_lineDegree = -1;
+float diff = 0;
+bool emergency = false;
+bool start = false;
+bool overhalf = false;
+bool first_detect = false;
+
+void back();
+void left();
+void right();
+
+int lastLeftState = HIGH;
 int lastRightState = HIGH;
 unsigned long lastPress = 0;
 unsigned long lastUpdate = 0;
+bool showData = false; // false = Start/Run, true = 顯示數據
+bool showRun = false;
+// #define DEBUG
+robotState state = IDLE;
+void robot_offense();
+void Debug();
+bool ball_search();
+void offense();
+void line_processing();
+void attack();
 
+void setup()
+{
+  pinMode(Pin, INPUT_PULLUP);
+  pinMode(Pin1, INPUT_PULLUP);
+  pinMode(Pin2, INPUT_PULLUP);
 
-void loop(){
-  
-  {
-    /* code */
-  }
-  
-  int leftState  = digitalRead(BUTTON_LEFT);
+  Robot_Init();
+  showStart();
+
+  attachInterrupt(digitalPinToInterrupt(Pin), back, RISING);
+  attachInterrupt(digitalPinToInterrupt(Pin1), left, RISING);
+  attachInterrupt(digitalPinToInterrupt(Pin2), right, RISING);
+
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  /*readBNO085Yaw();
+  ballsensor();
+  robot_offense();*/
+  Debug();
+}
+
+void Debug()
+{
+  int leftState = digitalRead(BUTTON_LEFT);
   int rightState = digitalRead(BUTTON_RIGHT);
 
-
   // ------------------ 左鍵切換 Start / Data ------------------
-  if (leftState == LOW && lastLeftState == HIGH && (millis() - lastPress) > 100) {
+  if (leftState == LOW && lastLeftState == HIGH && (millis() - lastPress) > 100)
+  {
     showData = !showData;
     showRun = false; // 切回 Data 時取消 Run
     lastPress = millis();
-    if (!showData) showStart();
+    if (!showData)
+      showStart();
   }
   lastLeftState = leftState;
 
   // ------------------ 右鍵在 Start 顯示 Run ------------------
-  /*if (rightState == LOW && lastRightState == HIGH && (millis() - lastPress) > 100) {
-    if (!showData) {  // 只有 Start 畫面生效
+  if (rightState == LOW && lastRightState == HIGH && (millis() - lastPress) > 100)
+  {
+    if (!showData)
+    { // 只有 Start 畫面生效
       showRun = !showRun;
       lastPress = millis();
-      if (showRun) showRunScreen();
-      else showStart();
+      if (showRun)
+      {
+        showRunScreen();
+        while (1)
+        {
+          attack();
+        }
+      }
+    }
+    else
+    {
+      showStart();
     }
   }
-  lastRightState = rightState;*/
-
+  lastRightState = rightState;
 
   // ------------------ Sensor ------------------
   readBNO085Yaw();
   ballsensor();
-
-  // ------------------ 顯示 Data 畫面 ------------------
-  if (showData && (millis() - lastUpdate > 200)) {
-    showSensors(gyroData.heading, ballData.dir, ballSensor);
-    Serial.print("ball_dir="); Serial.println(ballData.dir);
+  if (showData && (millis() - lastUpdate > 200))
+  {
+    showSensors(gyroData.heading, ballData.dir, lineData.valid);
+    if (rightState == LOW)
+    {
+      display.clearDisplay();
+      display.setTextSize(2);
+      display.setCursor(0, 20);
+      display.println("Scanning...");
+      display.display();
+      Serial5.write(0xAA);
+      while (digitalRead(BUTTON_LEFT))
+        ;
+      Serial5.write(0xEE);
+    }
+    // Serial.print("ball_dir="); Serial.println(ballData.dir);
     lastUpdate = millis();
   }
-if (ballData.dir==3 || ballData.dir==4){
-  RobotIKControl (0,15,0);
+}
+
+void attack(){
+  readBNO085Yaw();
+  linesensor();
+  float sumX = 0, sumY = 0;
+  // Serial.print("lineData.state=");
+  // Serial.println(lineData.state, BIN);
+
+  for (int i = 0; i < 18; i++)
+  {
+    bool detected = ((lineData.state & (1UL << i)) == 0); // 0 表有線
+    // Serial.print("Sensor "); Serial.print(i);
+    // Serial.print(": "); Serial.println(detected ? "ON line" : "OFF line");
+    if (detected)
+    {
+      float deg = linesensorDegreelist[i];
+      if (deg >= 360)
+        deg -= 360;
+
+      // Serial.print("  deg +180 = "); Serial.println(deg);
+
+      sumX += cos(deg * DtoR_const);
+      sumY += sin(deg * DtoR_const);
+      count++;
+    }
   }
-else if (ballData.dir==0||ballData.dir==2){
-  RobotIKControl (-15,0,0);
+  if (lineData.state == 0b111111111111111111 && !overhalf && count > 0)
+  { // no line
+    count = 0;
+    lineVx = 0;
+    lineVy = 0;
+    first_detect = false;
+    init_lineDegree = -1;
+  }
+
+  if (count > 0 || overhalf)
+  {
+    float lineDegree = atan2(sumY, sumX) * RtoD_const;
+    if (lineDegree < 0)
+    {
+      lineDegree += 360;
+    }
+    if (start)
+    {
+      showLine();
+      start = false;
+    }
+    // Serial.print("sumX="); Serial.print(sumX);
+    // Serial.print(", sumY="); Serial.print(sumY);
+    // Serial.print(", average lineDegree="); Serial.println(lineDegree);
+    if (first_detect == false)
+    {
+      init_lineDegree = lineDegree;
+      first_detect = true;
+    }
+
+    diff = fabs(fmod((lineDegree - init_lineDegree), 360));
+    float finalDegree;
+    if (diff > EMERGENCY_THRESHOLD)
+    {
+      overhalf = true;
+      finalDegree = lineDegree;
+      Serial.println("EMERGENCY");
+    }
+    else
+    {
+      overhalf = false;
+      finalDegree = fmod(lineDegree + 180, 360);
+      // delay(1000);
+    }
+    Serial.print("lineDegree=");
+    Serial.println(lineDegree);
+    Serial.print("finalDegree=");
+    Serial.println(finalDegree);
+    Serial.print("first_detect");
+    Serial.println(first_detect);
+    float speed = 50;
+    lineVx = speed * cos(finalDegree * DtoR_const);
+    lineVy = speed * sin(finalDegree * DtoR_const);
+    Vector_Motion(int(lineVx), int(lineVy));
+    // Serial.print("lineVx="); Serial.print(lineVx);
+    // Serial.print("lineVy="); Serial.println(lineVy);
+  }
+  else
+  {
+    lineVx = 0;
+    lineVy = 0;
+    if (!start)
+    {
+      showStart();
+      start = true;
+    }
+    ballsensor();
+    if (ballData.dir == 255)
+    {
+      ballVx = 0;
+      ballVy = 0;
+    }
+    else
+    {
+      float ballDegree = ballDegreelist[ballData.dir];
+      float offset = 0;
+
+      // Serial.print("balldir=");Serial.println(ballData.dir);
+      // Serial.print("ballDegree=");Serial.println(ballDegree);
+      // Serial.print("ballData.dis=");Serial.println(ballData.dis);
+      // Serial.print("exp");Serial.println(exp(-0.55*(ballData.dis-7)));
+      // delay(2000);
+
+      if (ballDegree == 87.5 || ballDegree == 92.5)
+      {
+        offset = 0;
+      }
+
+      else
+      {
+
+        double offsetRatio = exp(-0.55 * (ballData.dis - 7));
+        offsetRatio = (exp(-0.55 * (ballData.dis - 7)) > 1) ? 1 : offsetRatio;
+        offset = 95 * offsetRatio;
+        offset = (ballDegree > 90) ? offset : -offset;
+        offset = (ballDegree < 270) ? offset : -offset;
+        Serial.print("offset=");
+        Serial.println(offset);
+      }
+
+      float moving_Degree = ballDegree + offset;
+      // Serial.print("moving_Degree="); Serial.println(moving_Degree);
+
+      float ballspeed = map(ballData.dis, 0, 12, 20, 50);
+      ballspeed = constrain(ballspeed, 20, 50);
+      // Serial.print("BallSpeed="); Serial.println(ballspeed);
+      ballVx = ballspeed * cos(moving_Degree * DtoR_const);
+      ballVy = ballspeed * sin(moving_Degree * DtoR_const);
+    }
+    if (backtouch && ballVy < 0)
+    {
+      ballVy = 0;
+    }
+    if (lefttouch && ballVx < 0)
+    {
+      ballVx = 0;
+    }
+    if (righttouch && ballVx > 0)
+    {
+      ballVx = 0;
+    }
+    Vector_Motion(int(ballVx), int(ballVy));
+  }
+  // float finalVx = (lineVx != 0) ? lineVx : ballVx + lineVx;
+  // float finalVy = (lineVy != 0) ? lineVy : ballVy + lineVy;
+
+  if (digitalRead(Pin) == 0)
+  {
+    backtouch = false;
+  }
+  if (digitalRead(Pin1) == 0)
+  {
+    lefttouch = false;
+  }
+  if (digitalRead(Pin2) == 0)
+  {
+    righttouch = false;
+  }
+  // delay(1000);
 }
-else if (ballData.dir==5||ballData.dir==7){
-  RobotIKControl (15,0,0); 
+void back()
+{
+  backtouch = true;
 }
-else if (ballData.dir==8|| ballData.dir==10||ballData.dir==13||ballData.dir==15){
-  RobotIKControl (0,-15,0);
+void left()
+{
+  lefttouch = true;
 }
-else{ 
-  RobotIKControl (0,0,0);
-}
-/*switch (ballData.dir) {
-  case 3:
-  case 4:
-    RobotIKControl(0, 15, 0);
-    break;
-
-  case 0:
-  case 2:
-    RobotIKControl(15, 0, 0);
-    break;
-
-  case 5:
-  case 7:
-    RobotIKControl(-15, 0, 0);
-    break;
-
-  case 8:
-  case 10:
-  case 13:
-  case 15:
-    RobotIKControl(0, -15, 0);
-    break;
-
-  default:
-    RobotIKControl(0, 0, 0);
-    break;
-}
-*/
-
-
-
-
-}
-
-
-void robot_attack(){
-  ;
+void right()
+{
+  righttouch = true;
 }
