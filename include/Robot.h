@@ -46,13 +46,32 @@ enum robotState {BALL_SEARCH, OFFENSE, DEFENSE, AVOID_LINE, IDLE};
 #define DIRA_4 6    // 方向控制腳1
 #define DIRB_4 9
 
+#define RtoD_const 57.2958
+
+#define HEADER 0xCC
+#define TAIL   0xEE
+
+#define US_left A13
+#define US_right A14
+#define US_back A12
+
+// ---CAMERA---
+struct camera {
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+    bool valid;
+} targetData;
+
 // --- GLOBAL OBJECTS & STRUCTS ---
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-struct GyroData {float heading = 0.0; bool valid = false;} gyroData;
+struct GyroData {float heading = 0.0; float pitch = 0; bool valid = false;} gyroData;
 struct LineData {uint32_t state = 0xFFFF; bool valid = false;} lineData;
 struct BallData {uint8_t dis = 255; uint8_t dir = 255; bool valid = false;} ballData;
 struct PosData {int8_t x = 0; int8_t y = 0;} position;
+struct USData{float dist_b;float dist_l;float dist_r;} usData;
 float ballDegreelist[16]={
   22.5,45,67.5,87.5,92.5,112.5,135,157.5,202.5,225,247.5,265,275,292.5,315,337.5
 };
@@ -83,7 +102,7 @@ void showSensors(float gyro, int ball, int light);
 void SetMotorSpeed(uint8_t port, int8_t speed);
 void MotorStop();
 void RobotIKControl(int8_t vx, int8_t vy, float omega);
-
+void decodeTargetData();
 void Vector_Motion(float Vx, float Vy);
 void Degree_Motion(float moving_degree, int8_t speed);
 
@@ -120,7 +139,9 @@ void Robot_Init(){
   pinMode(pwmPin4,OUTPUT);
   pinMode(DIRA_4,OUTPUT);
   pinMode(DIRB_4,OUTPUT);
-
+  pinMode(US_back, INPUT);
+  pinMode(US_left, INPUT);
+  pinMode(US_right, INPUT);
   Wire.begin();
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) while(1);
   display.clearDisplay();
@@ -153,13 +174,12 @@ void readBNO085Yaw() {
 
     // Compare with buffer[18]
     if (esti_checksum != buffer[18]) {
-      Serial.println("Checksum error");
       continue;
     }
 
     // --- Extract yaw (Little Endian) ---
     int16_t yaw_raw = (int16_t)((buffer[4] << 8) | buffer[3]);
-
+    int16_t pitch_raw = (int16_t)((buffer[6] << 8) | buffer[5]);
     //Serial.print("yaw_raw: ");
     //Serial.println(yaw_raw);
 
@@ -169,6 +189,9 @@ void readBNO085Yaw() {
       gyroData.valid = true;
     }
 
+    if(abs(pitch_raw <= 18000)){
+      gyroData.pitch = pitch_raw * 0.01f;
+    }
     break; // Process one packet per call
   }
 }
@@ -280,11 +303,18 @@ void showRunScreen() {
 }
 
 void showSensors(float gyro, int ball, int light) {
-  display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(0, 0);  display.print("Gyro: ");  display.println(gyro);
   display.setCursor(0, 15); display.print("Ball: ");  display.println(ball);
   display.setCursor(0, 30); display.print("Light: "); display.println(light);
+  display.display();
+}
+
+void showUS(float dist1, float dist2, float dist3) {
+  display.setTextSize(1);
+  display.setCursor(60, 0);  display.print("d_l ");  display.println(dist1);
+  display.setCursor(60, 15); display.print("d_r");  display.println(dist2);
+  display.setCursor(60, 30); display.print("d_b "); display.println(dist3);
   display.display();
 }
 
@@ -348,6 +378,26 @@ void SetMotorSpeed(uint8_t port, int8_t speed){
   }
 }
 
+void read_us_sensor(){
+  /*
+  float dist_b=0;
+  float dist_l=0; 
+  float dist_r=0;
+  for(uint8_t i = 0; i < 5; i++){
+    dist_b += (analogRead(US_back) * 520 / 1024);
+    dist_l += (analogRead(US_left) * 520 / 1024);
+    dist_r += (analogRead(US_right) * 520 / 1024);
+  }*/
+  /*
+  usData.dist_b = (analogRead(A8) * 520 / 1024.0);
+  usData.dist_l = (analogRead(A13) * 520 / 1024.0);
+  usData.dist_r = (analogRead(A14) * 520 / 1024.0);
+  */
+  usData.dist_b = (analogRead(US_back) * 3)/10.0;
+  usData.dist_l = (analogRead(US_left)* 3)/10.0;
+  usData.dist_r = (analogRead(US_right)* 3)/10.0;
+}
+
 void MotorStop(){
   digitalWrite(DIRA_1,LOW);
   digitalWrite(DIRB_1,LOW);
@@ -398,6 +448,7 @@ void Vector_Motion(float Vx, float Vy) {
       if (fabs(e) > control.heading_threshold) {
           omega = e * control.P_factor;
       }
+      Serial.print("omega");Serial.println(omega);
       RobotIKControl((int8_t)Vx, (int8_t)Vy, omega);
 }
 
@@ -426,7 +477,37 @@ void Degree_Motion(float moving_degree, int8_t speed) {
 
 // NOTE: To make this code run on an Arduino, you must add a setup() and loop() function
 // which will call Robot_Init() and the sensor/motion functions respectively.
+void readCameraData() {
+    static uint8_t buffer[10];
+    static uint8_t index = 0;
 
+    while (Serial3.available()) {
+        uint8_t b = Serial3.read();
+
+        if (index == 0 && b != HEADER)
+            continue;  // 等待開頭 0xCC
+
+        buffer[index++] = b;
+        if (index == 10) {  // 收滿 10 bytes
+            if (buffer[0] == HEADER && buffer[9] == TAIL) {
+                targetData.x = buffer[1] | (buffer[2] << 8);
+                targetData.y = buffer[3] | (buffer[4] << 8);
+                targetData.w = buffer[5] | (buffer[6] << 8);
+                targetData.h = buffer[7] | (buffer[8] << 8);
+                if(targetData.x == 65535 || targetData.y == 65535 || targetData.w == 65535 || targetData.h == 65535){
+                  targetData.valid = false;  
+                }
+                else{
+                  targetData.valid = true;
+                }            
+            } 
+            else {
+                targetData.valid = false;
+            }
+            index = 0;  // reset buffer
+        }
+    }
+}
 
 void update_robot_heading();
 

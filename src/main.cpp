@@ -5,26 +5,17 @@
 #include <Robot.h>
 #include <math.h>
 
-#define RtoD_const 57.2958
-
-#define US_front A13
-#define US_left A12
-#define US_right A14
-#define US_back A8
-
-float dist_f;
-float dist_b;
-float dist_l;
-float dist_r;
-
+// OUTLINE SENSOR
 const int Pin = 41;
 const int Pin1 = 40;
 const int Pin2 = 39;
 
+// INTERUPT
 volatile bool backtouch = false;
 volatile bool lefttouch = false;
 volatile bool righttouch = false;
 
+//SPEED
 float ballVx = 0;
 float ballVy = 0;
 float lineVx = 0;
@@ -35,6 +26,7 @@ float x = 2;
 const float EMERGENCY_THRESHOLD = 80.0;
 float init_lineDegree = -1;
 float diff = 0;
+
 bool emergency = false;
 bool start = false;
 bool overhalf = false;
@@ -43,6 +35,10 @@ bool first_detect = false;
 void back();
 void left();
 void right();
+
+//CAMERA
+unsigned long lastUpdate_camera = 0;  // 記錄上次執行時間
+const unsigned long interval = 100;  // 10Hz = 每100毫秒一次
 
 int lastLeftState = HIGH;
 int lastRightState = HIGH;
@@ -64,11 +60,6 @@ void setup()
   pinMode(Pin, INPUT_PULLUP);
   pinMode(Pin1, INPUT_PULLUP);
   pinMode(Pin2, INPUT_PULLUP);
-
-  pinMode(US_front, INPUT_PULLUP);
-  pinMode(US_back, INPUT_PULLUP);
-  pinMode(US_left, INPUT_PULLUP);
-  pinMode(US_right, INPUT_PULLUP);
 
   Robot_Init();
   showStart();
@@ -130,9 +121,12 @@ void Debug()
   // ------------------ Sensor ------------------
   readBNO085Yaw();
   ballsensor();
+  read_us_sensor();
   if (showData && (millis() - lastUpdate > 200))
-  {
+  { 
+    display.clearDisplay();
     showSensors(gyroData.heading, ballData.dir, lineData.valid);
+    showUS(usData.dist_l, usData.dist_r, usData.dist_b);
     if (rightState == LOW)
     {
       display.clearDisplay();
@@ -153,13 +147,56 @@ void Debug()
 void attack(){
   readBNO085Yaw();
   linesensor();
+  read_us_sensor();
+  // CAMERA
+  unsigned long now = millis();
+  if(now - lastUpdate_camera >= interval){
+    lastUpdate_camera = now;
+    readCameraData();
+  }
+  //Serial.print("height");Serial.println(targetData.h);
+  double rotate = 0;
+  if(targetData.valid){
+    if(targetData.y > 90){
+      if(targetData.x >= 90 && targetData.x <= 150){
+        rotate=0;
+      }
+      else if(targetData.x < 90){
+        rotate = 0.8 * (90-targetData.x) / 90.0;
+      }
+      else if(targetData.x > 150){
+        rotate = -0.8 * (targetData.x-150) / 170.0;
+      }
+    }
+    // >20 150 <20 135
+    control.robot_heading += rotate;
+    if(control.robot_heading < 40){ 
+      control.robot_heading = 40;
+    }
+    if(control.robot_heading > 140){ 
+      control.robot_heading = 140;
+    }
+  }
+  else{
+    rotate = control.robot_heading - 90;
+    if(rotate > 10){
+      rotate = -1;
+    }
+    else if (rotate < -10){
+      rotate = 1; 
+    }
+    control.robot_heading += rotate; 
+  }
+  
+  /*Serial.print(" Y=");
+  Serial.print(targetData.y);
+  Serial.print(" W=");
+  Serial.print(targetData.w);
+  Serial.print(" H=");
+  Serial.println(targetData.h);*/
   float sumX = 0, sumY = 0;
   // Serial.print("lineData.state=");
   // Serial.println(lineData.state, BIN);
-  dist_f = analogRead(US_front) * 520 / 1024;
-  dist_b = analogRead(US_back) * 520 / 1024;
-  dist_l = analogRead(US_left) * 520 / 1024;
-  dist_r = analogRead(US_right) * 520 / 1024;
   //Serial.print("dist_f = ");Serial.println(dist_f);
   //Serial.print("dist_b = ");Serial.println(dist_b );
   //Serial.print("dist_l = ");Serial.println(dist_l);
@@ -182,6 +219,7 @@ void attack(){
       count++;
     }
   }
+  count= 0;
   if (lineData.state == 0b111111111111111111 && !overhalf && count > 0)
   { // no line
     count = 0;
@@ -190,7 +228,14 @@ void attack(){
     first_detect = false;
     init_lineDegree = -1;
   }
-
+  if (gyroData.pitch > 20 ){
+    count = 0;
+    lineVx = 0;
+    lineVy = 0;
+    first_detect = !first_detect;
+    init_lineDegree = -1;
+    overhalf = !overhalf;
+  }
   if (count > 0 || overhalf)
   {
     float lineDegree = atan2(sumY, sumX) * RtoD_const;
@@ -235,7 +280,7 @@ void attack(){
     float speed = 50;
     lineVx = speed * cos(finalDegree * DtoR_const);
     lineVy = speed * sin(finalDegree * DtoR_const);
-    Vector_Motion(int(lineVx), int(lineVy));
+    //Vector_Motion(int(lineVx), int(lineVy));
     // Serial.print("lineVx="); Serial.print(lineVx);
     // Serial.print("lineVy="); Serial.println(lineVy);
   }
@@ -249,29 +294,29 @@ void attack(){
       start = true;
     }
     ballsensor();
-    if (ballData.dir == 255)
-    {
-      if((abs(dist_f - dist_b)) <= 30){
+    if (ballData.dir == 255){ 
+      Vector_Motion(0,0);
+      /*if(usData.dist_b <= 110 && usData.dist_b >= 90){
         ballVy = 0;
       }
-      else if(abs(dist_f - dist_b) > 30 && dist_f > dist_b){
-        ballVy = 15;
+      else if(usData.dist_b < 90 ){
+        ballVy = 25;
       }
-      else if(abs(dist_f - dist_b) > 30 && dist_f < dist_b){
-        ballVy = -15;
+      else if(usData.dist_b > 110){
+        ballVy = -25;
       }
-    //Serial.print("ballVy");Serial.println(ballVy);
+    Serial.print("ballVy");Serial.println(ballVy);
     
 
-    if((abs(dist_r - dist_l)) <= 30){
+    if((abs(usData.dist_r - usData.dist_l)) <= 30){
         ballVx = 0;
       }
-      else if(abs(dist_r - dist_l) > 30 && dist_r > dist_l){
-        ballVx = 15;
+      else if(abs(usData.dist_r - usData.dist_l) > 30 && usData.dist_r > usData.dist_l){
+        ballVx = 25;
       }
-      else if(abs(dist_r - dist_l) > 30 && dist_r < dist_l){
-        ballVx = -15;
-      }
+      else if(abs(usData.dist_r - usData.dist_l) > 30 && usData.dist_r < usData.dist_l){
+        ballVx = -25;
+      }*/
     //Serial.print("ballVx");Serial.println(ballVx);
     }
     else
@@ -328,25 +373,17 @@ void attack(){
   // float finalVx = (lineVx != 0) ? lineVx : ballVx + lineVx;
   // float finalVy = (lineVy != 0) ? lineVy : ballVy + lineVy;
 
-  if (digitalRead(Pin) == 0)
-  {
+  if (digitalRead(Pin) == 0){
     backtouch = false;
   }
-  if (digitalRead(Pin1) == 0)
-  {
+  if (digitalRead(Pin1) == 0){
     lefttouch = false;
   }
-  if (digitalRead(Pin2) == 0)
-  {
+  if (digitalRead(Pin2) == 0){
     righttouch = false;
   }
-  // delay(1000);
-  if(dist_f<40 && ballVy > 0){
-    ballVy = ballVy * 0.5;
-  }
-  Serial.print("Vy");Serial.println(ballVy);
-  Serial.print("disf");Serial.println(dist_f);
-    
+  Serial.print("Target X=");Serial.println(targetData.x);
+  Serial.print("control.robot_heading");Serial.println(control.robot_heading);
 }
 void back()
 {
