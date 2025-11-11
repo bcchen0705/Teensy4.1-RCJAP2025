@@ -6,14 +6,14 @@
 #include <stdbool.h> // Added for clarity
 
 //Line Sensor
-#define EMERGENCY_THRESHOLD 80
+#define EMERGENCY_THRESHOLD 50
 
 //BALL SEARCHING THRESHOLD
 #define BALL_Threshold 5
 #define TOTAL_BALL_SENSORS 10
 
 //ROBOT MAX SPEED
-#define MAX_V 60
+#define MAX_V 70
 
 //ROBOT DEFENSE PARAMETERS
 #define MAX_VX 60
@@ -284,7 +284,9 @@ void ballsensor(){
     ballData.valid = true;
     ballData.dir = (temp & 0x0F);
     ballData.dis = (temp & 0xF0)>>4;
-    ballData.possession = (uint8_t)((1-alpha) * b[2] + ballData.possession * alpha);
+    //ballData.possession = (uint8_t)((1-alpha) * b[2] + ballData.possession * alpha);
+    ballData.possession = (uint8_t) b[2];
+  
   }
   else{
     ballData.valid = false;
@@ -507,7 +509,7 @@ void kicker_control(bool kick = false){
   static bool charging_state = false;
 
   const uint32_t CHARGE_DURATION = 5000;   // ms needed to charge
-  const uint32_t CHARGE_TIMEOUT  = 3000;  // ms before recharging automatically
+  const uint32_t CHARGE_TIMEOUT  = 8000;  // ms before recharging automatically
 
   uint64_t now = millis();
 
