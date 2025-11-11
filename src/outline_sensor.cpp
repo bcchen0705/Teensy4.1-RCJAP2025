@@ -34,6 +34,18 @@ void loop() {
     
   //Serial.println(analogRead(Pin2));
   //Serial.println(digitalRead(Pin2));
+
+  Serial.println("Pin");
+  Serial.println(analogRead(Pin));
+  Serial.println(digitalRead(Pin));
+
+
+
+  Serial.println("Pin1");
+  Serial.println(analogRead(Pin1));
+  Serial.println(digitalRead(Pin1));
+
+
   Serial.println("Pin2");
   Serial.println(analogRead(Pin2));
   Serial.println(digitalRead(Pin2));
