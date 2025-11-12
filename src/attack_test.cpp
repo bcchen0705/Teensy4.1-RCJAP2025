@@ -21,7 +21,7 @@ float lineVy = 0;
 
 int count = 0;
 float x = 1.5;
-const float EMERGENCY_THRESHOLD = 90.0; 
+//const float EMERGENCY_THRESHOLD = 90.0; 
 float init_lineDegree = -1;
 float diff = 0;    
 bool emergency = false;
