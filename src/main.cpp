@@ -132,16 +132,16 @@ void attack(){
         le = 0;
         re = 0;
       }
-      else if(targetData.x < 130){
-        int16_t e = (130-targetData.x);
+      else if(targetData.x < 120){
+        int16_t e = (120-targetData.x);
         //le = le - e;
-        rotate = e / 130.0;
+        rotate = 0.8 * (e / 120.0);
         //le = e;
       }
-      else if(targetData.x > 190){
-        int16_t e = (targetData.x - 190);
+      else if(targetData.x > 200){
+        int16_t e = (targetData.x - 200);
         //re = re - e;
-        rotate = -e / 130.0;
+        rotate = -0.8 * (e / 120.0);
         //re = e;
       }
     }
@@ -156,11 +156,11 @@ void attack(){
   else{
     rotate = control.robot_heading - 90;
     if(rotate > 10){
-      rotate = -1;
+      rotate = -0.8;
 
     }
     else if(rotate < -10){
-      rotate = 1; 
+      rotate = 0.8; 
     }
     else{
       rotate = 0;
@@ -219,8 +219,8 @@ void attack(){
     if(lineDegree < 0){
       lineDegree += 360;
     }
-    if(start){
-      showMessage("Line");
+    if(start){                                
+      showMessage("LINE");
       start = false;
     }
     // Serial.print("sumX="); Serial.print(sumX);
@@ -239,9 +239,9 @@ void attack(){
     
     diff = fabs(fmod((lineDegree - init_lineDegree), 360));
     float finalDegree;
-    float speed = 70;
-    Serial.printf("overhalf = %d", overhalf);
-    Serial.printf("lineDegre = %d", lineDegree);
+    float speed = 60;
+    //Serial.printf("overhalf = %d", overhalf);
+    //Serial.printf("lineDegre = %d", lineDegree);
     if(diff > EMERGENCY_THRESHOLD){
       /*
       if(overhalf){
@@ -321,10 +321,10 @@ void attack(){
       //Serial.print("ballData.dis=");Serial.println(ballData.dis);
       // Serial.print("exp");Serial.println(exp(-0.55*(ballData.dis-7)));
       //delay(500);
-      float ballspeed = map(ballData.dis, 0, 12, 20, 70);
+      float ballspeed = map(ballData.dis, 0, 12, 20, 60);
       if(ballDegree == 87.5 || ballDegree == 92.5){
         offset = 0;
-        ballspeed = 60;
+        ballspeed = 50;
       }
       else{
         double offsetRatio = exp(-0.55 *(ballData.dis - 7));
@@ -337,14 +337,14 @@ void attack(){
       }
       float moving_Degree = ballDegree + offset;
       // Serial.print("moving_Degree="); Serial.println(moving_Degree);
-      ballspeed = constrain(ballspeed, 20, 70);
+      ballspeed = constrain(ballspeed, 20,60);
       // Serial.print("BallSpeed="); Serial.println(ballspeed);
       ballVx = ballspeed * cos(moving_Degree * DtoR_const);
       ballVy = ballspeed * sin(moving_Degree * DtoR_const);
     }
 
     // INTERUPT
-    if(backtouch && ballVy < 0){
+    /*if(backtouch && ballVy < 0){
       ballVy = 0;
       if(lefttouch && backtouch){
         if(targetData.valid == 65535){
@@ -368,7 +368,7 @@ void attack(){
         ballVy = 30;
       }
       else{
-        ballVx = 0;
+        ballVx = 20;
       }
       if(lefttouch && backtouch){
         if(targetData.valid == 65535){
@@ -384,7 +384,7 @@ void attack(){
         ballVy = 30;
       }
       else{
-        ballVx = 0;
+        ballVx = -20;
       }
       if(righttouch && backtouch){
         if(targetData.valid == 65535){
@@ -400,20 +400,26 @@ void attack(){
         ballVy = -15;
       }
     }
+    if(right_us < 50 && ballVx > 0){
+      ballVx *= 0.5;
+    }
+    else if(left_us < 50 && ballVx < 0){
+      ballVx *= 0.5;
+    }
     if(backtouch && lefttouch && targetData.h != 65535){
     }
     else if(backtouch && righttouch && targetData.h != 65535){
-    }
+    }*/
     if(ballData.possession < possession_Threshold){
       ballVy = MAX_V;
       //catch_timer+=2;
       //if(catch_timer > 4){
         //if(targetData.valid){
-          if(targetData.h > 23){
-            kicker_control(1);
-            Serial.print("kick");
-            catch_timer = 0;
-          }
+          //if(targetData.h > 23){
+            //kicker_control(1);
+            //Serial.print("kick");
+            //catch_timer = 0;
+          //}
         //}
       //}
     }
@@ -425,16 +431,40 @@ void attack(){
     }
     //Serial.println(catch_timer);
     //        降速
-    if(ballVy > 0 && targetData.h != 65535){
-      if(targetData.h > 30){
-        ballVy = 15;
+    if(targetData.x >= 210 && ballVx < 0){
+      ballVx = ballVx * 0.7;
+      if(targetData.h > 30 && ballVy > 0){
+        ballVy = 0.7 * ballVy;
       }
-      //else if(targetData.h < 25){
-      //  ballVy *= 0.8;
-      //}
     }
+    else if(targetData.x <=110 && ballVx > 0){
+      ballVx = ballVx * 0.7;
+      if(targetData.h > 30 && ballVy > 0){
+        ballVy = 0.7 * ballVy;
+      }
+    }
+    if(ballVy > 0 && targetData.h != 65535){
+      if(targetData.h > 25){
+        ballVy = 20;
+      }
+      else if(targetData.h < 25){
+        ballVy *= 0.8;
+      }
+    }
+    if(left_us < 80 && ballVx < 0 || right_us < 80 && ballVx > 0){
+      ballVx *= 0.7;
+    }
+    
+    else if(left_us < 60 && ballVx < 0 || right_us < 60 && ballVx > 0){
+      ballVx *= 0.5;
+    }
+
+
     Vector_Motion(int(ballVx), int(ballVy));
+
     //Vector_Motion(0,0);
+    //Serial.print("ballVy");Serial.println(ballVy);
+    //Serial.print("ballVx");Serial.println(ballVx);
   }
   // float finalVx =(lineVx != 0) ? lineVx : ballVx + lineVx;
   // float finalVy =(lineVy != 0) ? lineVy : ballVy + lineVy;
@@ -450,11 +480,14 @@ void attack(){
   }
 
 
-  //Serial.print("Target X =");Serial.println(targetData.x);
+  Serial.print("Target X =");Serial.println(targetData.x);
   //Serial.print("Target Y =");Serial.println(targetData.y);
   //Serial.print("Target H =");Serial.println(targetData.h);
   //Serial.print("control.robot_heading =");Serial.println(control.robot_heading);
   //Serial.print("rotate =");Serial.println(rotate);
   //Serial.print("ballData.possession =");Serial.println(ballData.possession);
-  Serial.print("usback =");Serial.println(analogRead(back_us));
+  //Serial.print("usback =");Serial.println(analogRead(back_us));
+  //Serial.print("gyroData.pitch=");Serial.println(gyroData.pitch);
+  //Serial.print("usleft =");Serial.println(analogRead(left_us));  
+  //Serial.print("usright =");Serial.println(analogRead(right_us));
 }
