@@ -109,7 +109,7 @@ bool Debug(){
 }
 //                    外側光感
 void outlinesensor(){
-  if(analogRead(back_ls) >= 550){
+  if(analogRead(back_ls) >= 480){
     backtouch = true;
   }
   else{
@@ -121,7 +121,7 @@ void outlinesensor(){
   else{
     lefttouch = false;
   }
-  if(analogRead(right_ls) >= 500){
+  if(analogRead(right_ls) >= 450){
     righttouch = true;
   }
   else{
@@ -169,11 +169,11 @@ void attack(){
       }
     }
     control.robot_heading += rotate;
-    if(control.robot_heading < 35){ 
-      control.robot_heading = 35;
+    if(control.robot_heading < 45){ 
+      control.robot_heading = 45;
     }
-    if(control.robot_heading > 145){ 
-      control.robot_heading = 145;
+    if(control.robot_heading > 135){ 
+      control.robot_heading = 135;
     }
   }
   else{
@@ -425,10 +425,10 @@ void attack(){
         } 
       }
     }
-    if(analogRead(back_us) < 40 && (rightlstouch || leftlstouch)){
-      ballVy = 30;
-    }
-    /*
+    //if(analogRead(back_us) < 40 && (righttouch || lefttouch)){
+      //ballVy = 30;
+    //}
+    /*/
     if(lefttouch || righttouch){
       if(targetData.h > 25 && ballVy > 0){
         ballVy = -15;
@@ -496,8 +496,8 @@ void attack(){
         Serial.print("0.7");
       }
       if(analogRead(left_us) < 60 && ballVx < 0 || analogRead(right_us) < 60 && ballVx > 0){
-        ballVx *= 0.5;
-        if(analogRead(front_us) < 45){
+        ballVx *= 0.4;
+        if(analogRead(front_us) < 40){
           ballVy = -15;
         }
         else if(analogRead(front_us) < 30){
@@ -593,12 +593,11 @@ void attack(){
   //Serial.print("ballData.possession =");Serial.println(ballData.possession);
   //Serial.print("usback =");Serial.println(analogRead(back_us));
   //Serial.print("gyroData.pitch=");Serial.println(gyroData.pitch);
-  //Serial.print("usleft =");Serial.println(analogRead(left_us));  
-  //Serial.print("usright =");Serial.println(analogRead(right_us));
-  //Serial.print("usfront =");Serial.println(analogRead(front_us));
+  Serial.print("usleft =");Serial.println(analogRead(left_us));  
+  Serial.print("usright =");Serial.println(analogRead(right_us));
+  Serial.print("usfront =");Serial.println(analogRead(front_us));
   for(uint8_t i = 0; i < 18; i++){
     Serial.print(lineData.state >> (i)&1);
   }
   Serial.println("");
-  //delay(500);
 }
