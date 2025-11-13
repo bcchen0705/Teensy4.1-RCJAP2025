@@ -579,8 +579,8 @@ void attack(){
 
     Serial.printf("usData.dist_f%d, usData.dist_b%d\n", usData.dist_f, usData.dist_b);
     float angle_diff = abs(90-control.robot_heading) * DtoR_const;
-    float replfront = cos(angle_diff) * ((usData.dist_f * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
-    float replback = cos(angle_diff) * ((usData.dist_b * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+    float replfront = cos(angle_diff) * ((usData.dist_f * cos(angle_diff) - 30) / 15.0);//speed down started from 60cm
+    float replback = cos(angle_diff) * ((usData.dist_b * cos(angle_diff) - 30) / 15.0);//speed down started from 60cm
     replfront = 1 - constrain(replfront, 0, 1);//block from 0-1;
     replfront *= -1;//negative force
     replback = 1 - constrain(replback, 0, 1);//block from 0-1;
@@ -593,8 +593,8 @@ void attack(){
         ballVy += replback * MAX_V;
     }
     
-    float replleft =  cos(angle_diff) * ((usData.dist_l * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
-    float replright = cos(angle_diff) * ((usData.dist_r * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+    float replleft =  cos(angle_diff) * ((usData.dist_l * cos(angle_diff) - 30) / 15.0);//speed down started from 60cm
+    float replright = cos(angle_diff) * ((usData.dist_r * cos(angle_diff) - 30) / 15.0);//speed down started from 60cm
     replright = 1 - constrain(replright, 0, 1);//block from 0-1;
     replright *= -1;//negative force
     replleft = 1 - constrain(replleft, 0, 1);//block from 0-1;
