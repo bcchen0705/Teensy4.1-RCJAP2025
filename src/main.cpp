@@ -109,19 +109,19 @@ bool Debug(){
 }
 //                    外側光感
 void outlinesensor(){
-  if(analogRead(back_ls) >= 480){
+  if(analogRead(back_ls) >= 550){
     backtouch = true;
   }
   else{
     backtouch = false;
   }
-  if(analogRead(left_ls) >= 520){
+  if(analogRead(left_ls) >= 500){
     lefttouch = true;
   }
   else{
     lefttouch = false;
   }
-  if(analogRead(right_ls) >= 520){
+  if(analogRead(right_ls) >= 650){
     righttouch = true;
   }
   else{
@@ -241,7 +241,6 @@ void attack(){
   }
   Serial.printf("cout=%d\n",count);
   if(count > 0 || overhalf){
-
     float lineDegree = atan2(sumY, sumX) * RtoD_const;
     if(!linedetected && overhalf ){
       speed_timer++;
@@ -255,6 +254,7 @@ void attack(){
         first_detect = false;
         init_lineDegree = -1;
         overhalf = false;
+        speed_timer = 0;
       }
     }
     if(lineDegree < 0){
@@ -294,7 +294,7 @@ void attack(){
         finalDegree = lineDegree;
       }*/
       overhalf = true;
-      finalDegree = lineDegree;
+      finalDegree = fmod(lineDegree, 360);;
     }
     else{
       overhalf = false;
@@ -475,7 +475,7 @@ void attack(){
     }
     //Serial.println(catch_timer);
     //        降速w
-    if(targetData.valid){
+    /*if(targetData.valid){
       
       if(targetData.x >= 210 && ballVx < 0){
         Serial.println("1");
@@ -490,7 +490,7 @@ void attack(){
         if(targetData.h > 30 && ballVy > 0){
           ballVy = 0.7 * ballVy;
         }
-      }/*球門降速
+      }球門降速
       if(ballVy > 0 && targetData.h != 65535){
         Serial.println("3");
         if(targetData.h > 25){
@@ -499,10 +499,10 @@ void attack(){
         else if(targetData.h < 25){
           ballVy *= 0.8;
         }
-      }*/
+      }
     }
     else{
-      if(analogRead(left_us < 80) && ballVx < 0 || analogRead(right_us) < 80 && ballVx > 0){
+      (left_us) < 80 && ballVx < 0 || analogRead(right_us) < 80 && ballVx > 0){
         ballVx *= 0.7;
         Serial.print("0.7");
       }
@@ -523,7 +523,7 @@ void attack(){
     }
     if(analogRead(right_us) < 25 && ballVx > 0){
       ballVx = -30;
-    }
+    }*/
   // Example P-control version
     /*
   // Tunable constants
@@ -537,7 +537,6 @@ void attack(){
   int distLeft  = analogRead(left_us);
   int distRight = analogRead(right_us);
   int distFront = analogRead(front_us);
-
   // --- SIDE WALL CONTROL ---
 
   // Compute proportional corrections
@@ -577,13 +576,43 @@ void attack(){
   Serial.print(ballVx);
   Serial.print("  Vy: ");
   Serial.println(ballVy);
-    Vector_Motion(int(ballVx), int(ballVy));
 
-    //Vector_Motion(0,0);
-    Serial.println("----------");
-    Serial.print("ballVy");Serial.println(ballVy);
-    Serial.print("ballVx");Serial.println(ballVx);
+  Serial.printf("usData.dist_f%d, usData.dist_b%d\n", usData.dist_f, usData.dist_b);
+  float angle_diff = abs(90-control.robot_heading) * DtoR_const;
+  float replfront = cos(angle_diff) * ((usData.dist_f * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+  float replback = cos(angle_diff) * ((usData.dist_b * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+  replfront = 1 - constrain(replfront, 0, 1);//block from 0-1;
+  replfront *= -1;//negative force
+  replback = 1 - constrain(replback, 0, 1);//block from 0-1;
+  replback *= 1;//positive force
+  Serial.printf("replfront%f, replback%f", replfront, replback);
+  if(ballVy> 0){
+      ballVy += replfront * MAX_V;
   }
+  if(ballVy < 0){
+      ballVy += replback * MAX_V;
+  }
+  
+  float replleft =  cos(angle_diff) * ((usData.dist_l * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+  float replright = cos(angle_diff) * ((usData.dist_r * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+  replright = 1 - constrain(replright, 0, 1);//block from 0-1;
+  replright *= -1;//negative force
+  replleft = 1 - constrain(replleft, 0, 1);//block from 0-1;
+  replleft *= 1;//positive force
+  if(ballVx > 0){
+      ballVx += replright * MAX_V;
+  }
+  if(ballVx < 0){
+      ballVx += replleft * MAX_V;
+  }
+  Serial.printf("ballVx = %f, ballVy = %f\n", ballVx, ballVy);
+  //Vector_Motion(0,0);
+  Vector_Motion(int(ballVx), int(ballVy));
+
+  //Vector_Motion(0,0);
+  Serial.println("----------");
+  Serial.print("ballVy");Serial.println(ballVy);
+  Serial.print("ballVx");Serial.println(ballVx);
   // float finalVx =(lineVx != 0) ? lineVx : ballVx + lineVx;
   // float finalVy =(lineVy != 0) ? lineVy : ballVy + lineVy;
   
