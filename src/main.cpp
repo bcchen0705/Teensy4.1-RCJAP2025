@@ -121,7 +121,7 @@ void outlinesensor(){
   else{
     lefttouch = false;
   }
-  if(analogRead(right_ls) >= 450){
+  if(analogRead(right_ls) >= 550){
     righttouch = true;
   }
   else{
@@ -234,18 +234,28 @@ void attack(){
     count = 0;
     lineVx = 0;
     lineVy = 0;
-    first_detect = !first_detect;
+    first_detect = false;
     init_lineDegree = -1;
     overhalf = false;
     speed_timer = 0;
   }
   Serial.printf("cout=%d\n",count);
   if(count > 0 || overhalf){
-    speed_timer++;
+
     float lineDegree = atan2(sumY, sumX) * RtoD_const;
     if(!linedetected && overhalf ){
+      speed_timer++;
       Serial.println("halfgree");
+
       lineDegree = init_lineDegree + 180;
+      if(speed_timer > 5000){
+        count = 0;
+        lineVx = 0;
+        lineVy = 0;
+        first_detect = false;
+        init_lineDegree = -1;
+        overhalf = false;
+      }
     }
     if(lineDegree < 0){
       lineDegree += 360;
@@ -586,9 +596,10 @@ void attack(){
   //Serial.print("ballData.possession =");Serial.println(ballData.possession);
   //Serial.print("usback =");Serial.println(analogRead(back_us));
   //Serial.print("gyroData.pitch=");Serial.println(gyroData.pitch);
-  Serial.print("usleft =");Serial.println(analogRead(left_us));  
-  Serial.print("usright =");Serial.println(analogRead(right_us));
-  Serial.print("usfront =");Serial.println(analogRead(front_us));
+  //Serial.print("usleft =");Serial.println(analogRead(left_us));  
+  //Serial.print("usright =");Serial.println(analogRead(right_us));
+  //Serial.print("usfront =");Serial.println(analogRead(front_us));
+  Serial.print("speedtimer");Serial.println(speed_timer);
   for(uint8_t i = 0; i < 18; i++){
     Serial.print(lineData.state >> (i)&1);
   }

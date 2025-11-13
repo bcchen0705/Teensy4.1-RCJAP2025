@@ -40,7 +40,7 @@ bool ball_search();
 void offense();
 void line_processing();
 void attack();
-
+void outlinesensor();
 
 void setup(){
   Robot_Init();
@@ -106,7 +106,27 @@ bool Debug(){
   Serial.println("debug");
   return true;
 }
-
+//                    外側光感
+void outlinesensor(){
+  if(analogRead(back_ls) >= 480){
+    backtouch = true;
+  }
+  else{
+    backtouch = false;
+  }
+  if(analogRead(left_ls) >= 550){
+    lefttouch = true;
+  }
+  else{
+    lefttouch = false;
+  }
+  if(analogRead(right_ls) >= 550){
+    righttouch = true;
+  }
+  else{
+    righttouch = false;
+  }
+}
 void attack(){
   static int catch_timer = 0;
   static int16_t le = 0;
@@ -115,6 +135,7 @@ void attack(){
   readBNO085Yaw();
   linesensor();
   readussensor();
+  outlinesensor();
   //LOW FREQUENCY
   unsigned long now = millis();
   if(now - lastUpdate >= interval){
@@ -380,7 +401,7 @@ void attack(){
       }
     }
     if(righttouch && ballVx > 0){
-      if(back_us < 60){
+      if(analogRead(back_us) < 60){
         ballVy = 30;
       }
       else{
@@ -395,18 +416,19 @@ void attack(){
         } 
       }
     }
-    if(lefttouch || righttouch){
+    /*if(lefttouch || righttouch){
       if(targetData.h > 25 && ballVy > 0){
         ballVy = -15;
       }
-    }
-    if(right_us < 50 && ballVx > 0){
+    }*/
+   /*
+    if(analogRead(right_us) < 50 && ballVx > 0){
       ballVx *= 0.5;
     }
-    else if(left_us < 50 && ballVx < 0){
+    else if(analogRead(left_us) < 50 && ballVx < 0){
       ballVx *= 0.5;
-    }
-    if(backtouch && lefttouch && targetData.h != 65535){
+    }/*
+    /*if(backtouch && lefttouch && targetData.h != 65535){
     }
     else if(backtouch && righttouch && targetData.h != 65535){
     }*/
@@ -431,32 +453,53 @@ void attack(){
     }
     //Serial.println(catch_timer);
     //        降速
-    if(targetData.x >= 210 && ballVx < 0){
-      ballVx = ballVx * 0.7;
-      if(targetData.h > 30 && ballVy > 0){
-        ballVy = 0.7 * ballVy;
+    if(targetData.valid){
+      if(targetData.x >= 210 && ballVx < 0){
+        Serial.println("1");
+        ballVx = ballVx * 0.7;
+        if(targetData.h > 30 && ballVy > 0){
+          ballVy = 0.7 * ballVy;
+        }
+      }
+      else if(targetData.x <= 110 && ballVx > 0){
+        Serial.println("2");
+        ballVx = ballVx * 0.7;
+        if(targetData.h > 30 && ballVy > 0){
+          ballVy = 0.7 * ballVy;
+        }
+      }/*球門降速
+      if(ballVy > 0 && targetData.h != 65535){
+        Serial.println("3");
+        if(targetData.h > 25){
+          ballVy = 20;
+        }
+        else if(targetData.h < 25){
+          ballVy *= 0.8;
+        }
+      }*/
+    }
+    else{
+      if(analogRead(left_us < 80) && ballVx < 0 || analogRead(right_us) < 80 && ballVx > 0){
+        ballVx *= 0.7;
+        Serial.print("0.7");
+      }
+      if(analogRead(left_us) < 60 && ballVx < 0 || analogRead(right_us) < 60 && ballVx > 0){
+        ballVx *= 0.4;
+        if(analogRead(front_us) < 40){
+          ballVy = -15;
+        }
+        if(analogRead(front_us) < 30){
+          ballVy = -30;
+        }
+        Serial.print("0.5");
       }
     }
-    else if(targetData.x <= 110 && ballVx > 0){
-      ballVx = ballVx * 0.7;
-      if(targetData.h > 30 && ballVy > 0){
-        ballVy = 0.7 * ballVy;
-      }
+    if(analogRead(left_us) < 25 && ballVx < 0 ){
+      ballVx = 30;
+      Serial.print("-15");
     }
-    if(ballVy > 0 && targetData.h != 65535){
-      if(targetData.h > 25){
-        ballVy = 20;
-      }
-      else if(targetData.h < 25){
-        ballVy *= 0.8;
-      }
-    }
-    if(analogRead(left_us) < 80 && ballVx < 0 || analogRead(right_us) < 80 && ballVx > 0){
-      ballVx *= 0.7;
-    }
-    
-    else if(analogRead(left_us) < 60 && ballVx < 0 || analogRead(right_us) < 60 && ballVx > 0){
-      ballVx *= 0.5;
+    if(analogRead(right_us) < 25 && ballVx > 0){
+      ballVx = -30;
     }
 
 
@@ -469,16 +512,6 @@ void attack(){
   // float finalVx =(lineVx != 0) ? lineVx : ballVx + lineVx;
   // float finalVy =(lineVy != 0) ? lineVy : ballVy + lineVy;
   
-  if(digitalRead(back_ls) == 0){
-    backtouch = false;
-  }
-  if(digitalRead(left_ls) == 0){
-    lefttouch = false;
-  }
-  if(digitalRead(right_ls) == 0){
-    righttouch = false;
-  }
-
 
   Serial.print("Target X =");Serial.println(targetData.x);
   //Serial.print("Target Y =");Serial.println(targetData.y);

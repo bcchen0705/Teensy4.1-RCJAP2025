@@ -22,7 +22,6 @@ void setup() {
   //attachInterrupt(digitalPinToInterrupt(Pin1), stop,RISING);
   //attachInterrupt(digitalPinToInterrupt(Pin2), stop,RISING);
 }
-
 void loop() {
   //Serial.println("Pin");
   //Serial.println(digitalRead(Pin));
