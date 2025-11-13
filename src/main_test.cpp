@@ -109,19 +109,19 @@ bool Debug(){
 }
 //                    外側光感
 void outlinesensor(){
-  if(analogRead(back_ls) >= 480){
+  if(analogRead(back_ls) >= 520){
     backtouch = true;
   }
   else{
     backtouch = false;
   }
-  if(analogRead(left_ls) >= 550){
+  if(analogRead(left_ls) >= 500){
     lefttouch = true;
   }
   else{
     lefttouch = false;
   }
-  if(analogRead(right_ls) >= 550){
+  if(analogRead(right_ls) >= 500){
     righttouch = true;
   }
   else{
@@ -476,6 +476,12 @@ void attack(){
     //Serial.println(catch_timer);
     //        降速
     if(targetData.valid){
+      if(targetData.h > 25 && ballVy>0 ){
+        ballVy *= 0.8;
+      }
+      if(targetData.h > 30){
+        ballVy *= 0.6; 
+      }
       if(targetData.x >= 210 && ballVx < 0){
         Serial.println("1");
         ballVx = ballVx * 0.7;
@@ -502,11 +508,11 @@ void attack(){
     }
     else{
       if(analogRead(left_us < 80) && ballVx < 0 || analogRead(right_us) < 80 && ballVx > 0){
-        ballVx *= 0.8;
+        ballVx *= 0.7;
         Serial.print("0.7");
       }
       if(analogRead(left_us) < 60 && ballVx < 0 || analogRead(right_us) < 60 && ballVx > 0){
-        ballVx *= 0.5;
+        ballVx *= 0.4;
         if(analogRead(front_us) < 40){
           ballVy = -15;
         }

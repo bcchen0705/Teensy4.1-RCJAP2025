@@ -13,7 +13,7 @@
 #define TOTAL_BALL_SENSORS 10
 
 //ROBOT MAX SPEED
-#define MAX_V 60
+#define MAX_V 40
 
 //ROBOT DEFENSE PARAMETERS
 #define MAX_VX 60
@@ -86,7 +86,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 struct GyroData{float heading = 0.0; float pitch = 0.0; bool valid = false;} gyroData;
 struct LineData{uint32_t state = 0x3FFFF; bool valid = false;} lineData;
 struct BallData{uint8_t dis = 255; uint8_t dir = 255; uint8_t possession = 255; bool valid = false;} ballData;
-struct USSensor{uint16_t dist_b = 0; uint16_t dist_l = 0; uint16_t dist_r = 0; } usData;
+struct USSensor{uint16_t dist_b = 0; uint16_t dist_l = 0; uint16_t dist_r = 0;uint16_t dist_f = 0; } usData;
 struct CamData{uint16_t x = 65535;uint16_t y = 65535;uint16_t w = 65535;uint16_t h = 65535; bool valid = false;} targetData;
 
 float ballDegreelist[16]={22.5,45,67.5,87.5,92.5,112.5,135,157.5,202.5,225,247.5,265,275,292.5,315,337.5};
@@ -320,21 +320,23 @@ void readussensor(){
   static float dist_b_f = 0.0f;
   static float dist_l_f = 0.0f;
   static float dist_r_f = 0.0f;
+  static float dist_f_f = 0.0f;
 
   // read raw ADC and convert to cm (or mm depending on your scaling)
   float dist_b_raw = analogRead(back_us) * 520.0f / 1024.0f;
   float dist_l_raw = analogRead(left_us) * 520.0f / 1024.0f;
   float dist_r_raw = analogRead(right_us) * 520.0f / 1024.0f;
-
+  float dist_f_raw = analogRead(front_us) * 520.0f / 1024.0f;
   // complementary (low-pass) filtering
   dist_b_f = alpha * dist_b_f + (1.0f - alpha) * dist_b_raw;
   dist_l_f = alpha * dist_l_f + (1.0f - alpha) * dist_l_raw;
   dist_r_f = alpha * dist_r_f + (1.0f - alpha) * dist_r_raw;
-
+  dist_f_f = alpha * dist_f_f + (1.0f - alpha) * dist_f_raw;
   // assign filtered values to struct
   usData.dist_b = dist_b_f;
   usData.dist_l = dist_l_f;
   usData.dist_r = dist_r_f;
+  usData.dist_f = dist_f_f;
 }
 /*
 void showStart(){

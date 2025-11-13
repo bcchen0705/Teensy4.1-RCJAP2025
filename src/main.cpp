@@ -115,13 +115,13 @@ void outlinesensor(){
   else{
     backtouch = false;
   }
-  if(analogRead(left_ls) >= 550){
+  if(analogRead(left_ls) >= 520){
     lefttouch = true;
   }
   else{
     lefttouch = false;
   }
-  if(analogRead(right_ls) >= 550){
+  if(analogRead(right_ls) >= 520){
     righttouch = true;
   }
   else{
@@ -474,8 +474,9 @@ void attack(){
       //}
     }
     //Serial.println(catch_timer);
-    //        降速
+    //        降速w
     if(targetData.valid){
+      
       if(targetData.x >= 210 && ballVx < 0){
         Serial.println("1");
         ballVx = ballVx * 0.7;
