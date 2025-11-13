@@ -500,24 +500,17 @@ void attack(){
         if(analogRead(front_us) < 40){
           ballVy = -15;
         }
-        else if(analogRead(front_us) < 30){
+        if(analogRead(front_us) < 30){
           ballVy = -30;
         }
         Serial.print("0.5");
       }
     }
-    if(analogRead(left_us) < 30 && ballVx < 0 ){
-      ballVx = 15;
+    if(analogRead(left_us) < 25 && ballVx < 0 ){
+      ballVx = 30;
       Serial.print("-15");
     }
-    if(analogRead(right_us) < 30 && ballVx > 0){
-      ballVx = -15;
-    }  
-    if(analogRead(left_us) < 25){
-      ballVx = 30;
-      Serial.print("-30");
-    }
-    if(analogRead(right_us) < 25){
+    if(analogRead(right_us) < 25 && ballVx > 0){
       ballVx = -30;
     }
   // Example P-control version
