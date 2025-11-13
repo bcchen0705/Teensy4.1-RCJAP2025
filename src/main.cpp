@@ -502,7 +502,7 @@ void attack(){
       }
     }
     else{
-      (left_us) < 80 && ballVx < 0 || analogRead(right_us) < 80 && ballVx > 0){
+      if((analogRead(left_us) < 80 && ballVx < 0) || analogRead(right_us) < 80 && ballVx > 0){
         ballVx *= 0.7;
         Serial.print("0.7");
       }
@@ -524,91 +524,91 @@ void attack(){
     if(analogRead(right_us) < 25 && ballVx > 0){
       ballVx = -30;
     }*/
-  // Example P-control version
-    /*
-  // Tunable constants
-  float Kp_side = 0.5;    // proportional gain for side correction
-  float Kp_front = 1.0;   // proportional gain for front correction
-  float minDist_side = 80; // desired minimum distance from side walls
-  float minDist_front = 45; // desired minimum distance from front wall
-  float maxSpeed = 30;    // clamp max speed
+    // Example P-control version
+      /*
+    // Tunable constants
+    float Kp_side = 0.5;    // proportional gain for side correction
+    float Kp_front = 1.0;   // proportional gain for front correction
+    float minDist_side = 80; // desired minimum distance from side walls
+    float minDist_front = 45; // desired minimum distance from front wall
+    float maxSpeed = 30;    // clamp max speed
 
-  // Read sensor values
-  int distLeft  = analogRead(left_us);
-  int distRight = analogRead(right_us);
-  int distFront = analogRead(front_us);
-  // --- SIDE WALL CONTROL ---
+    // Read sensor values
+    int distLeft  = analogRead(left_us);
+    int distRight = analogRead(right_us);
+    int distFront = analogRead(front_us);
+    // --- SIDE WALL CONTROL ---
 
-  // Compute proportional corrections
-  float errorLeft  = (minDist_side - distLeft);
-  float errorRight = (minDist_side - distRight);
+    // Compute proportional corrections
+    float errorLeft  = (minDist_side - distLeft);
+    float errorRight = (minDist_side - distRight);
 
-  // Only correct when near a wall
-  float correctionX = 0;
+    // Only correct when near a wall
+    float correctionX = 0;
 
-  if (distLeft < minDist_side && ballVx < 0) {
-    correctionX = Kp_side * errorLeft;  // push away from wall
+    if (distLeft < minDist_side && ballVx < 0) {
+      correctionX = Kp_side * errorLeft;  // push away from wall
+    }
+    else if (distRight < minDist_side && ballVx > 0) {
+      correctionX = -Kp_side * errorRight;
+    }
+
+    // Apply correction
+    ballVx += correctionX;
+
+    // Clamp to safe limits
+    ballVx = constrain(ballVx, -maxSpeed, maxSpeed);
+
+
+    // --- FRONT WALL CONTROL ---
+
+    if (distFront < minDist_front) {
+      float errorFront = (minDist_front - distFront);
+      float correctionY = -Kp_front * errorFront;
+      ballVy += correctionY;
+
+      // optional clamp
+      ballVy = constrain(ballVy, -maxSpeed, maxSpeed);
+    }*/
+
+    // Optional debug output
+    Serial.print("Vx: ");
+    Serial.print(ballVx);
+    Serial.print("  Vy: ");
+    Serial.println(ballVy);
+
+    Serial.printf("usData.dist_f%d, usData.dist_b%d\n", usData.dist_f, usData.dist_b);
+    float angle_diff = abs(90-control.robot_heading) * DtoR_const;
+    float replfront = cos(angle_diff) * ((usData.dist_f * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+    float replback = cos(angle_diff) * ((usData.dist_b * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+    replfront = 1 - constrain(replfront, 0, 1);//block from 0-1;
+    replfront *= -1;//negative force
+    replback = 1 - constrain(replback, 0, 1);//block from 0-1;
+    replback *= 1;//positive force
+    Serial.printf("replfront%f, replback%f", replfront, replback);
+    if(ballVy> 0){
+        ballVy += replfront * MAX_V;
+    }
+    if(ballVy < 0){
+        ballVy += replback * MAX_V;
+    }
+    
+    float replleft =  cos(angle_diff) * ((usData.dist_l * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+    float replright = cos(angle_diff) * ((usData.dist_r * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+    replright = 1 - constrain(replright, 0, 1);//block from 0-1;
+    replright *= -1;//negative force
+    replleft = 1 - constrain(replleft, 0, 1);//block from 0-1;
+    replleft *= 1;//positive force
+    if(ballVx > 0){
+        ballVx += replright * MAX_V;
+    }
+    if(ballVx < 0){
+        ballVx += replleft * MAX_V;
+    }
+    Serial.printf("ballVx = %f, ballVy = %f\n", ballVx, ballVy);
+    //Vector_Motion(0,0);
+    Vector_Motion(int(ballVx), int(ballVy));
   }
-  else if (distRight < minDist_side && ballVx > 0) {
-    correctionX = -Kp_side * errorRight;
-  }
-
-  // Apply correction
-  ballVx += correctionX;
-
-  // Clamp to safe limits
-  ballVx = constrain(ballVx, -maxSpeed, maxSpeed);
-
-
-  // --- FRONT WALL CONTROL ---
-
-  if (distFront < minDist_front) {
-    float errorFront = (minDist_front - distFront);
-    float correctionY = -Kp_front * errorFront;
-    ballVy += correctionY;
-
-    // optional clamp
-    ballVy = constrain(ballVy, -maxSpeed, maxSpeed);
-  }*/
-
-  // Optional debug output
-  Serial.print("Vx: ");
-  Serial.print(ballVx);
-  Serial.print("  Vy: ");
-  Serial.println(ballVy);
-
-  Serial.printf("usData.dist_f%d, usData.dist_b%d\n", usData.dist_f, usData.dist_b);
-  float angle_diff = abs(90-control.robot_heading) * DtoR_const;
-  float replfront = cos(angle_diff) * ((usData.dist_f * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
-  float replback = cos(angle_diff) * ((usData.dist_b * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
-  replfront = 1 - constrain(replfront, 0, 1);//block from 0-1;
-  replfront *= -1;//negative force
-  replback = 1 - constrain(replback, 0, 1);//block from 0-1;
-  replback *= 1;//positive force
-  Serial.printf("replfront%f, replback%f", replfront, replback);
-  if(ballVy> 0){
-      ballVy += replfront * MAX_V;
-  }
-  if(ballVy < 0){
-      ballVy += replback * MAX_V;
-  }
-  
-  float replleft =  cos(angle_diff) * ((usData.dist_l * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
-  float replright = cos(angle_diff) * ((usData.dist_r * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
-  replright = 1 - constrain(replright, 0, 1);//block from 0-1;
-  replright *= -1;//negative force
-  replleft = 1 - constrain(replleft, 0, 1);//block from 0-1;
-  replleft *= 1;//positive force
-  if(ballVx > 0){
-      ballVx += replright * MAX_V;
-  }
-  if(ballVx < 0){
-      ballVx += replleft * MAX_V;
-  }
-  Serial.printf("ballVx = %f, ballVy = %f\n", ballVx, ballVy);
-  //Vector_Motion(0,0);
-  Vector_Motion(int(ballVx), int(ballVy));
-
   //Vector_Motion(0,0);
   Serial.println("----------");
   Serial.print("ballVy");Serial.println(ballVy);
