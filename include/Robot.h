@@ -13,7 +13,7 @@
 #define TOTAL_BALL_SENSORS 10
 
 //ROBOT MAX SPEED
-#define MAX_V 40
+#define MAX_V 50
 
 //ROBOT DEFENSE PARAMETERS
 #define MAX_VX 60
@@ -28,9 +28,15 @@
 #define DtoR_const 0.0174529f
 #define RtoD_const 57.2958f
 
-// --- PIN DEFINITIONS ---
-#define BUTTON_LEFT  31
-#define BUTTON_RIGHT 30
+//按鈕
+#define BTN_UP 31
+#define BTN_DOWN 30
+#define BTN_ENTER 27
+#define BTN_ESC 26
+int _page = 0;      // 0: 主選單, 1: 掃描頁面
+int _cursor = 0;    // 選單游標位置
+unsigned long _lastPress = 0; 
+unsigned long _lastUpdate = 0;
 // ------------------ OLED ------------------
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -85,11 +91,13 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 struct GyroData{float heading = 0.0; float pitch = 0.0; bool valid = false;} gyroData;
 struct LineData{uint32_t state = 0x3FFFF; bool valid = false;} lineData;
-struct BallData{uint8_t dis = 255; uint8_t dir = 255; uint8_t possession = 255; bool valid = false;} ballData;
+//struct BallData{uint8_t dis = 255; uint8_t dir = 255; uint8_t possession = 255; bool valid = false;} ballData;
 struct USSensor{uint16_t dist_b = 0; uint16_t dist_l = 0; uint16_t dist_r = 0;uint16_t dist_f = 0; } usData;
 struct CamData{uint16_t x = 65535;uint16_t y = 65535;uint16_t w = 65535;uint16_t h = 65535; bool valid = false;} targetData;
+struct BallCam{uint16_t angle = 65535;uint16_t dist = 65535;bool valid = false;}ballData;
 
-float ballDegreelist[16]={22.5,45,67.5,87.5,92.5,112.5,135,157.5,202.5,225,247.5,265,275,292.5,315,337.5};
+
+//float ballDegreelist[16]={22.5,45,67.5,87.5,92.5,112.5,135,157.5,202.5,225,247.5,265,275,292.5,315,337.5};
 float linesensorDegreelist[18]={10,30,50,70,90,110,130,150,170,190,210,230,250,270,290,310,330,350};
 int8_t linesensor_ver_cor[18]={1,2,3,4,5,4,3,2,1,-1,-2,-3,-4,-5,-4,-3,-2,-1};
 
@@ -114,19 +122,20 @@ void positionEst();
 void showStart();
 void showLine();
 void showRunScreen();
-void showMessage(const char* message, int textSize = 2, int x = 0, int y = 20);
-void showSensors(float gyro, int ball, int light);
+void showMessage(const char* message, int textSize = 2, int x = -1, int y = -1);
+void showSensors(float gyro, int ballAngle);
 void SetMotorSpeed(uint8_t port, int8_t speed);
 void MotorStop();
 void RobotIKControl(int8_t vx, int8_t vy, float omega);
 void Vector_Motion(float Vx, float Vy);
 void Degree_Motion(float moving_degree, int8_t speed);
 void kicker_control(bool);
+bool menuUpdate() ;
 bool white_line_processing();
 void backlstouch();
 void leftlstouch();
 void rightlstouch();
-
+void readBallCam();
 // ******************************************************
 // --- FUNCTION IMPLEMENTATIONS (Existing & New) ---
 // ******************************************************
@@ -157,8 +166,10 @@ void Robot_Init(){
   pinMode(DIRA_4,OUTPUT);
   pinMode(DIRB_4,OUTPUT);
 
-  pinMode(BUTTON_LEFT, INPUT_PULLUP);
-  pinMode(BUTTON_RIGHT, INPUT_PULLUP);
+  pinMode(BTN_UP, INPUT_PULLUP);
+  pinMode(BTN_DOWN, INPUT_PULLUP);
+  pinMode(BTN_ENTER, INPUT_PULLUP);
+  pinMode(BTN_ESC, INPUT_PULLUP);
 
   pinMode(front_us, INPUT);
   pinMode(back_us, INPUT);
@@ -185,7 +196,6 @@ void Robot_Init(){
   display.setTextColor(SSD1306_WHITE);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-  showMessage("start");
   kicker_control(0);
 
 }
@@ -264,9 +274,7 @@ void readCameraData(){
     }
   }
 }
-
-
-void ballsensor(){
+/*void ballsensor(){
   // 發送請求封包，通知感測器回傳資料
   uint8_t b[4];
   ballData.valid = false;
@@ -291,13 +299,39 @@ void ballsensor(){
   else{
     ballData.valid = false;
   }
-}
+}*/
+void readBallCam(){
+    
+    static uint8_t buffer[6] = {0};
+    static uint8_t idx = 0;
+    while(Serial4.available()){
+        uint8_t b = Serial4.read();
+        if(idx == 0 && b != 0xCC){continue;} //wait for 0xCC
+        buffer[idx++] = b;
 
+        if(idx == 6){ //裝包 共6組
+            if(buffer[0] == 0xCC && buffer[5] == 0xEE){
+               ballData.angle = buffer[1] | (buffer[2] << 8);
+               ballData.dist = buffer[3] | (buffer[4] << 8);
+            
+               if(ballData.angle != 65535 && ballData.dist != 65535)
+                ballData.valid = true;
+               else{
+                ballData.valid = false;
+               }  //無球
+            }
+            else{
+                ballData.valid = false;
+            }  //無數據
+            idx = 0;  // reset buffer
+        }  
+    }
+}
 void linesensor(){
   uint8_t buffer[7];
-  Serial5.write(0xdd);
-  while(!Serial5.available());
-  Serial5.readBytes(buffer,7);
+  Serial7.write(0xdd);
+  while(!Serial7.available());
+  Serial7.readBytes(buffer,7);
   lineData.valid = false;
   if(buffer[0] != 0xaa) return;
   if(buffer[0] == 0xAA && buffer[6] == 0xEE){
@@ -314,7 +348,7 @@ void linesensor(){
     lineData.valid = false;  // checksum error
   }
 }
-
+/*
 void readussensor(){
   // static variables remember their values between calls
   static float dist_b_f = 0.0f;
@@ -338,7 +372,6 @@ void readussensor(){
   usData.dist_r = dist_r_f;
   usData.dist_f = dist_f_f;
 }
-/*
 void showStart(){
   display.clearDisplay();
   display.setTextSize(2);
@@ -371,31 +404,142 @@ void showRunScreen(){
   display.display();
 }
 */
-void showUS(float dist1, float dist2, float dist3) {
+/*void showUS(float dist1, float dist2, float dist3) {
   display.setTextSize(1);
   display.setCursor(60, 0);  display.print("d_l ");  display.println(dist1);
   display.setCursor(60, 15); display.print("d_r");  display.println(dist2);
   display.setCursor(60, 30); display.print("d_b "); display.println(dist3);
   display.display();
+}*/
+
+void showMessage(const char* message, int textSize, int x, int y) {
+    display.clearDisplay();
+    display.setTextSize(textSize);
+    display.setTextColor(SSD1306_WHITE);
+
+    int16_t x1, y1;
+    uint16_t w, h;
+    display.getTextBounds(message, 0, 0, &x1, &y1, &w, &h);
+
+    int finalX = (x == -1) ? (128 - w) / 2 : x;
+    int finalY = (y == -1) ? (64 - h) / 2 : y;
+
+    display.setCursor(finalX, finalY);
+    display.println(message);
+    display.display();
 }
 
-void showMessage(const char* message, int textSize = 2, int x = 0, int y = 20){
-  display.clearDisplay();
-  display.setTextSize(textSize);
-  display.setCursor(x, y);
-  display.println(message);
-  display.display();
-}
-
-void showSensors(float gyro, int ball, int light){
+void showSensors() {
   display.clearDisplay();
   display.setTextSize(1);
-  display.setCursor(0, 0);  display.print("Gyro:");  display.println(gyro);
-  display.setCursor(0, 15); display.print("Ball:");  display.println(ball);
-  display.setCursor(0, 30); display.print("Light:"); display.println(light);
+  display.setTextColor(SSD1306_WHITE);
+
+  // --- 第一列：陀螺儀 ---
+  display.setCursor(0, 0);
+  display.print("GYRO  :");
+  display.setCursor(50, 0);
+  display.print(gyroData.heading, 1); // 顯示到小數點第一位
+  display.print(" deg");
+
+  // --- 第二列：球的資訊 ---
+  display.setCursor(0, 16);
+  display.print("BALL  :");
+  display.setCursor(50, 16);
+  if (ballData.valid) {
+    display.print(ballData.angle);
+    display.print(" (D:"); 
+    display.print(ballData.dist);
+    display.print(")");
+  } else {
+    display.print("LOST");
+  }
+
+
+  // --- 第三列：球門與持球 ---
+  display.setCursor(0, 32);
+  display.print("GOAL  :");
+  display.setCursor(50, 32);
+  if (targetData.valid) {
+    display.print("X:"); display.print(targetData.x);
+  } else {
+    display.print("SEARCH");
+  }
+
+  // 下方小提示
+  display.drawLine(0, 12, 128, 12, SSD1306_WHITE); // 分隔線
+
   display.display();
 }
 
+bool menuUpdate() {
+  bool btnUp = (digitalRead(BTN_UP) == LOW);
+  bool btnDown = (digitalRead(BTN_DOWN) == LOW);
+  bool btnEnter = (digitalRead(BTN_ENTER) == LOW);
+  //bool btnEsc = (digitalRead(BTN_ESC) == LOW);
+
+  display.clearDisplay();
+
+  // --- 頁面 0：主選單 ---
+  if (_page == 0) {
+    // 游標切換 (Up/Down)
+    if ((btnUp || btnDown) && (millis() - _lastPress > 300)) {
+      _cursor = (_cursor == 0) ? 1 : 0;
+      _lastPress = millis();
+    }
+
+    // 確認執行 (Enter)
+    if (btnEnter && (millis() - _lastPress > 500)) {
+      _lastPress = millis();
+      if (_cursor == 0) {
+        return false; // 【關鍵】回傳 false 代表離開選單，開始 attack()
+      }
+      if (_cursor == 1) {
+        _page = 1; // 進入掃描分頁
+        Serial7.write(0xAA); // 通知 ESP32 開始掃描
+      }
+    }
+
+    // 繪製主頁面 (含感測器即時數值)
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.print("CAM: "); display.println(ballData.valid ? "OK" : "NO DATA");
+    display.printf("GYRO: %.1f\n", gyroData.heading);
+    display.printf("BALL: %d\n", ballData.angle);
+    display.drawLine(0, 26, 128, 26, SSD1306_WHITE);
+
+    // 顯示選項
+    const char* options[] = {" 1.START ATTACK", " 2.LINE SCANNING"};
+    for (int i = 0; i < 2; i++) {
+      display.setCursor(5, 35 + (i * 12));
+      if (_cursor == i) display.print("> ");
+      else              display.print("  ");
+      display.print(options[i]);
+    }
+  } 
+  
+  // --- 頁面 1：掃描頁面 ---
+  else if (_page == 1) {
+    display.setTextSize(2);
+    display.setCursor(15, 10);
+    display.print("SCANNING");
+    display.setTextSize(1);
+    display.setCursor(5, 45);
+    display.print("PRESS ENTER to SAVE");
+
+    // 儲存並返回 (Enter) 或 取消 (Esc)
+    if (btnEnter && (millis() - _lastPress > 500)) {
+      _lastPress = millis();
+      for (int i = 0; i < 3; i++) {
+        Serial7.write(0xEE); // 發送結束/儲存指令
+        delay(1);
+      }
+      _page = 0; // 回到主頁面
+    }
+  }
+
+  display.display();
+  return true; // 繼續留在選單模式
+}
 /*Actuators Part*/
 void SetMotorSpeed(uint8_t port, int8_t speed){
   speed = constrain(speed,-1.5 * MAX_V, 1.5 * MAX_V);

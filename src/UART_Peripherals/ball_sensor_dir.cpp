@@ -1,32 +1,65 @@
 #include <Arduino.h>
-uint8_t buffer[3];
-int buffer_index = 0;
+#include <Robot.h>
+#include <math.h>
+
+struct BallCamData{
+    uint16_t angle = 65535;
+    uint16_t dist = 65535;
+    bool valid = false;
+}; BallCamData ballCamData;
+
+int ballvx = 0;
+int ballvy = 0;
+
 
 void setup() {
-  Serial.begin(9600);   // Debug
-  Serial3.begin(115200);  // Connect to ESP32 Serial0 TX
-  Serial.println("start");   // Debug
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, 1);
+  Serial.begin(115200);
+  Robot_Init();
 }
 
-void loop() {
-  if (Serial3.available()) {
-    uint8_t b = Serial3.read();
-    if (buffer_index == 0 && b != 0xAA) return; // wait for start
-    buffer[buffer_index++] = b;
+void loop(){
+  readBNO085Yaw();
+    static uint8_t buffer[6];
+    static uint8_t index = 0;
+    
+    // 假設每次 loop 都檢查 UART
+    while(Serial4.available()){
+        uint8_t b = Serial4.read();
 
-    if (buffer_index == 3) {
-      buffer_index = 0;
-      if (buffer[0] == 0xAA && buffer[2] == 0xEE) {
-        uint8_t temp = buffer[1];
-        uint8_t dir = (temp & 0x0F);
-        uint8_t dist = (temp & 0xF0) >> 4;
-        Serial.print("Ball Direction: ");
-        Serial.print(dir);
-        Serial.print("°, Distance: ");
-        Serial.println(dist);
-      }
+        // 等待起始符
+        if(index == 0 && b != 0xCC) continue;
+
+        buffer[index++] = b;
+
+        // 收到完整封包
+        if(index == 6){
+            if(buffer[0] == 0xCC && buffer[5] == 0xEE){
+                ballCamData.angle = buffer[1] | (buffer[2] << 8);
+                ballCamData.dist = buffer[3] | (buffer[4] << 8);
+
+                // 判斷是否有效
+                if(ballCamData.angle != 65535 && ballCamData.dist != 65535){
+                    ballCamData.valid = true;
+                     Serial.print("Angle: "); Serial.println(ballCamData.angle);
+                    //Serial.print("Distance: "); Serial.println(ballCamData.dist);
+                    float angle_rad = ballCamData.angle * DtoR_const;
+                    ballvx = (int)round(10.0f * cos(angle_rad));
+                    ballvy = (int)round(10.0f * sin(angle_rad));
+                    Serial.print("vx");Serial.println(ballvx);
+                    Serial.print("vy");Serial.println(ballvy);
+                    Vector_Motion(ballvx,ballvy);
+                } else {
+                    ballCamData.valid = false;
+                    Serial.println("No Ball (invalid data)");
+                    MotorStop();
+                }
+            } 
+            else {
+                ballCamData.valid = false;
+                Serial.println("No Ball (bad packet)");
+                MotorStop();
+            }
+            index = 0;  // reset buffer
+        }
     }
-  }
 }

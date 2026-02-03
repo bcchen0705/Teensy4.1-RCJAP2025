@@ -5,33 +5,80 @@
 #include <Robot.h>
 #include <math.h>
 
-const int Pin=41;
-const int Pin1=40;
-const int Pin2=39;
 
-volatile bool backtouch = false;
-volatile bool lefttouch = false;
-volatile bool righttouch = false;
-float Vx = 0;
-float Vy = 0;
+int ballVx;
+int ballVy;
 
-void back();
-void left();
-void right();
 
 void setup() {
-    pinMode(Pin,INPUT_PULLUP);
-    pinMode(Pin1,INPUT_PULLUP);
-    pinMode(Pin2,INPUT_PULLUP);
     Robot_Init();
-    Serial.begin(9600);
-    attachInterrupt(digitalPinToInterrupt(Pin), back,RISING);
-    attachInterrupt(digitalPinToInterrupt(Pin1), left,RISING);
-    attachInterrupt(digitalPinToInterrupt(Pin2), right,RISING);
-
 }
 
 void loop(){
+    readBNO085Yaw();
+    readBallCam();
+
+    if(ballData.valid){    //有球
+    Serial.print("Angle: "); Serial.println(ballData.angle);
+    Serial.print("Dist: "); Serial.println(ballData.dist);
+
+    //轉成弧度
+    float moving_degree = ballData.angle;
+    float ballspeed = constrain(map(ballData.dist, 40, 100, 20, 50),20, 50);
+    float offset = 0;
+
+    ballspeed = constrain(ballspeed, 20, 50);
+    
+    if(ballData.dist >= 50){
+      moving_degree = ballData.angle;
+      offset = 0;
+    }
+    else if(ballData.angle <= 105 && ballData.angle >= 75){
+      ballspeed = 30;
+      moving_degree = 90;
+      offset = 0;
+    }
+    else{
+      if (ballData.dist <= 30){
+        offset = 90;
+      }
+      float offsetRatio = exp(-0.05 * (ballData.dist - 30));
+      offsetRatio = constrain(offsetRatio, 0.0, 1.0);
+      offset = 45 + 45 * offsetRatio;
+      
+      float side;
+      if(ballData.angle > 90 && ballData.angle < 270){
+        side = 1;
+      }
+      else{side = -1;}
+
+      moving_degree = ballData.angle + (offset * side);
+      moving_degree = fmod(moving_degree + 360.0f, 360.0f) ;
+
+    }
+      
+    //計算vx vy
+    ballVx = (int)round(ballspeed * cos(moving_degree * DtoR_const));
+    ballVy = (int)round(ballspeed * sin(moving_degree * DtoR_const));
+
+    Serial.printf("moving%f",moving_degree);Serial.print("");
+    Serial.print("vx");Serial.println(ballVx);
+    Serial.print("vy");Serial.println(ballVy);
+
+    //誤差
+    //float error = ballData.angle - gyroData.heading;
+
+    //if(fabs(error) > 20.0f){
+      //gyroData.control.robot_heading = ballData.angle;
+    //}
+    
+    Vector_Motion(ballVx,ballVy);
+    //delay(300);
+  }
+  else { //無球
+    Serial.println("No Ball Detected");
+    Vector_Motion(0,0);
+  }
     /*readBNO085Yaw();
     ballsensor();
     Serial.println(ballData.dis);
@@ -46,71 +93,5 @@ void loop(){
     else{
         Vector_Motion(0,0);
     }*/
-    readBNO085Yaw();
-    ballsensor();
 
-    if(ballData.dir == 255){
-        Serial.println("No ball detected");
-        Vector_Motion(0, 0);  // 停止動作
-    }
-    else{
-        float ballDegree = ballDegreelist[ballData.dir];
-        float offset = 0;
-
-        Serial.print("balldir=");Serial.println(ballData.dir);
-        Serial.print("ballDegree=");Serial.println(ballDegree);
-        Serial.print("ballData.dis=");Serial.println(ballData.dis);
-        Serial.print("exp");Serial.println(exp(-0.75*ballData.dis));
-
-        map(ballData.dis,0,12,0,10); 
-
-        if((ballDegree >= 22.5 && ballDegree < 87.5) || (ballDegree > 92.5 && ballDegree <= 167.5) ){
-            offset = 90*(exp(-0.75*(ballData.dis-4)));            
-            offset = (ballDegree > 90 ) ? offset : -offset;
-            Serial.print("offset="); Serial.println(offset);
-        }
-
-        else if( ballDegree == 87.5 || ballDegree == 92.5){
-            offset = 0;
-        }
-
-        else if(ballDegree > 167.5 && ballDegree < 385.5){
-            offset = 90*(exp(-0.75*(ballData.dis-7)));            
-            offset = (ballDegree < 270 ) ? offset : -offset;    
-            Serial.print("offset="); Serial.println(offset);           
-        }
-
-        float moving_Degree = ballDegree + offset;
-        Serial.print("moving_Degree="); Serial.println(moving_Degree);
-        
-        Vx = 20 * cos(moving_Degree* DtoR_const );
-        Vy = 20 * sin( moving_Degree * DtoR_const );
-
-        if (backtouch && Vy < 0) {Vy = 0;}
-        if (lefttouch && Vx < 0)  {Vx = 0;}
-        if (righttouch && Vx > 0)  {Vx = 0;}
-
-
-        Vector_Motion( int(Vx) , int(Vy) );
-        
-    }
-    //delay(1000);
-    if(digitalRead(Pin)==0){
-            backtouch = false;
-        }
-    if(digitalRead(Pin1)==0){
-            lefttouch = false;
-        }
-    if(digitalRead(Pin2)==0){
-            righttouch = false;
-        }
-}
-void back() {
-  backtouch = true;
-}
-void left() {
-  lefttouch = true;
-}
-void right() {
-  righttouch = true;
 }

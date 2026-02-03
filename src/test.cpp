@@ -1,39 +1,21 @@
+
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <Arduino.h>
-#include <Robot.h>
+#include <math.h> // Added for sin, cos, and fabs
+#include <stdbool.h> // Added for clarity
 
-#define HEADER 0xCC
-#define TAIL   0xEE
 
-// === 解碼 MaixPy 傳來的 UART 封包 ===
-
+int LDR_pin = A0;
+int LDR_value = 0;
 
 void setup() {
-    Serial.begin(115200);
-    Serial3.begin(115200);  // 接 MaixPy 的 UART
-    Robot_Init();
+  Serial.begin(9600);
 }
 
 void loop() {
-    // 讀取 BNO085 姿態
-    readBNO085Yaw();
-    Serial.print("Pitch: ");
-    Serial.println(gyroData.pitch);
-
-    // 解碼 UART 封包
-    readCameraData();
-
-    // 如果有有效影像資料
-    if (targetData.valid) {
-        Serial.print("Target X=");
-        Serial.print(targetData.x);
-        Serial.print(" Y=");
-        Serial.print(targetData.y);
-        Serial.print(" W=");
-        Serial.print(targetData.w);
-        Serial.print(" H=");
-        Serial.println(targetData.h);
-    }
-    control.robot_heading = 90;
-    Vector_Motion(0,0);
-    
+  LDR_value = analogRead(LDR_pin);  // 0~1023 (或 0~4095 看 Teensy 型號)
+  Serial.println(LDR_value);
+  delay(100);
 }

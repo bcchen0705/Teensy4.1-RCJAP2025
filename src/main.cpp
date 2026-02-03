@@ -14,7 +14,6 @@ float ballVy = 0;
 float lineVx = 0;
 float lineVy = 0;
 
-int count = 0;
 float x = 2;
 float init_lineDegree = -1;
 float diff = 0;
@@ -22,6 +21,7 @@ bool emergency = false;
 bool start = false;
 bool overhalf = false;
 bool first_detect = false;
+uint32_t speed_timer = 0;
 
 //CAMERA
 unsigned long lastCameraUpdate = 0;  // 記錄上次執行時間
@@ -42,101 +42,122 @@ void line_processing();
 void outlinesensor();
 void attack();
 
-
 void setup(){
   Robot_Init();
   showMessage("Start");
+  display.clearDisplay();
+}
+
+bool Debug() {
+  readBNO085Yaw();
+  readBallCam();
+  linesensor(); 
+  // --- 1. 進入掃描模式 (ENTER) ---
+  if (!digitalRead(BTN_ENTER)) {
+    Serial.println("Enter Scanning Mode");
+    Serial7.write(0xAA); 
+    delay(300); // 防止按鍵抖動
+
+    // 在掃描期間，依然要維持讀取數據，才看得到結果
+    // 這裡用 while 迴圈卡住，直到「再次按下 ESC」
+    while (digitalRead(BTN_ESC)) { 
+      delay(20); 
+    }
+
+    Serial7.write(0xEE); // 發送結束/儲存指令
+    Serial.println("Save and Exit Scanning");
+    delay(500); // 給 ESP32 時間寫入 EEPROM，並防止 ESC 鍵誤觸下一個判斷
+  }
+
+  // --- 2. 退出 Debug 模式 (按住 UP 鍵或是長按 ESC) ---
+  // 改用 BTN_UP 進入 attack，避免跟掃描模式的 ESC 鍵打架
+  if (!digitalRead(BTN_UP)) {
+    Serial.println(">>> Exiting Debug. Starting Attack!");
+    return false; // 跳出 while(Debug()) 進入 attack
+  }
+
+  return true;
 }
 
 void loop(){
-  //Debug();
   while(Debug());
-  while(1){
-    attack();
-  }  
+  while (1) {
+    attack(); // 執行你的比賽邏輯
+  }
 }
-
-bool Debug(){
-  int leftState = digitalRead(BUTTON_LEFT);
-  int rightState = digitalRead(BUTTON_RIGHT);
 
   // ------------------ 左鍵切換 Start / Data ------------------
-  if(leftState == LOW && lastLeftState == HIGH &&(millis() - lastPress) > 100){
-    showData = !showData;
-    showRun = false; // 切回 Data 時取消 Run
-    lastPress = millis();
-    if(!showData){
-      showMessage("Start");
-    }
-  }
-  lastLeftState = leftState;
+  //if(leftState == LOW && lastLeftState == HIGH &&(millis() - lastPress) > 100){
+    //showData = !showData;
+    //showRun = false; // 切回 Data 時取消 Run
+    //lastPress = millis();
+    //if(!showData){
+      //showMessage("Start");
+    //}
+  //}
+  //lastLeftState = leftState;
 
   // ------------------ 右鍵在 Start 顯示 Run ------------------
-  if(rightState == LOW && lastRightState == HIGH &&(millis() - lastPress) > 100){
-    if(!showData){ // 只有 Start 畫面生效
-      showRun = !showRun;
-      lastPress = millis();
-      if(showRun){
-        showMessage("Run");
-        return false;
-      }
-    }
-    else{
-      showMessage("Start");
-    }
-  }
-  lastRightState = rightState;
+  //if(rightState == LOW && lastRightState == HIGH &&(millis() - lastPress) > 100){
+    //if(!showData){ // 只有 Start 畫面生效
+      //showRun = !showRun;
+      //lastPress = millis();
+      //if(showRun){
+        //showMessage("Run");
+        //return false;
+      //}
+   // }
+    //else{
+     // showMessage("Start");
+    //}
+  //}
+  ///lastRightState = rightState;
 
   // ------------------ Sensor ------------------
-  readBNO085Yaw();
-  ballsensor();
+  //readBNO085Yaw();
+  //readBallCam();
   //readussensor();
-  if(showData &&(millis() - lastUpdate > 200)){ 
-    display.clearDisplay();
-    showSensors(gyroData.heading, ballData.dir, lineData.valid);
-    showUS(usData.dist_l, usData.dist_r, usData.dist_b);
-    if(rightState == LOW){
-      showMessage("scanning...");
-      Serial5.write(0xAA);
-      while(digitalRead(BUTTON_LEFT));
-      Serial5.write(0xEE);
-    }
+  //if(showData &&(millis() - lastUpdate > 200)){ 
+    //display.clearDisplay();
+    //showSensors(gyroData.heading, ballData.angle, lineData.valid);
+    //if(rightState == LOW){
+      //showMessage("scanning...");
+      //Serial7.write(0xAA);
+      //while(digitalRead(BUTTON_LEFT));
+      //Serial7.write(0xEE);
+    //}
     // Serial.print("ball_dir="); Serial.println(ballData.dir);
-    lastUpdate = millis();
-  }
-  Serial.println("debug");
-  return true;
-}
+    //lastUpdate = millis();
+  //}
+  //Serial.println("debug");
+  //return true;
+//}
 //                    外側光感
 void outlinesensor(){
-  if(analogRead(back_ls) >= 550){
+  if(analogRead(back_ls) >= 500){
     backtouch = true;
   }
   else{
     backtouch = false;
   }
-  if(analogRead(left_ls) >= 500){
-    lefttouch = true;
-  }
-  else{
-    lefttouch = false;
-  }
-  if(analogRead(right_ls) >= 650){
-    righttouch = true;
-  }
-  else{
-    righttouch = false;
-  }
+  //if(analogRead(left_ls>= 520)){
+    //lefttouch = true;
+  //}
+  //else{
+    //lefttouch = false;
+  //}
+  //if(analogRead(right_ls) >= 780){
+    //righttouch = true;
+  //}//
+  //else{
+    //righttouch = false;
+  //}
 }
-
+/**/
 void attack(){
-  static int catch_timer = 0;
-  static int16_t le = 0;
-  static int16_t re = 0;
-  //HIGH FREQUENCY
   readBNO085Yaw();
   linesensor();
-  readussensor();
+  readBallCam();
   outlinesensor();
   //LOW FREQUENCY
   unsigned long now = millis();
@@ -147,13 +168,11 @@ void attack(){
     control.picked_up =(gyroData.pitch > 20) ? true : false;
   }
   //Serial.print("height");Serial.println(targetData.h);
-  double rotate = 0;
+  float rotate = 0;
   if(targetData.valid){
     if(targetData.y > 90){
       if(targetData.x >= 130 && targetData.x <= 190){
         rotate=0;
-        le = 0;
-        re = 0;
       }
       else if(targetData.x < 120){
         int16_t e = (120-targetData.x);
@@ -163,9 +182,7 @@ void attack(){
       }
       else if(targetData.x > 200){
         int16_t e = (targetData.x - 200);
-        //re = re - e;
         rotate = -0.8 * (e / 120.0);
-        //re = e;
       }
     }
     control.robot_heading += rotate;
@@ -204,16 +221,13 @@ void attack(){
   //Serial.print("dist_b = ");Serial.println(dist_b );
   //Serial.print("dist_l = ");Serial.println(dist_l);
   //Serial.print("dist_r = ");Serial.println(dist_r);
-  float sumX = 0, sumY = 0;
-  static int speed_timer = 0;
-  //bool hori_half = (SENSE(0)| SENSE(1) | SENSE(2))&(SENSE(6) | SENSE(7) | SENSE(8));
-  //bool vert_half = (SENSE(2) | SENSE(3) | SENSE(4) | SENSE(5) | SENSE(6))&(SENSE(11) | SENSE(12) | SENSE(13) | SENSE(14) | SENSE(5));
+  // A : 向量合成
+  float sumX = 0.0f, sumY = 0.0f;
+  int count = 0;
   bool linedetected = false;
+
   for(int i = 0; i < 18; i++){
-    bool detected =((lineData.state &(1UL << i)) == 0); // 0 表有線
-    // Serial.print("Sensor "); Serial.print(i);
-    // Serial.print(": "); Serial.println(detected ? "ON line" : "OFF line");
-    if(detected){
+    if(bitRead(lineData.state, i)){
       float deg = linesensorDegreelist[i];
       sumX += cos(deg * DtoR_const);
       sumY += sin(deg * DtoR_const);
@@ -221,25 +235,115 @@ void attack(){
       linedetected = true;
     }
   }
-  //count = 0;
-  if(lineData.state == 0b111111111111111111 && !overhalf && count > 0){ // no line
+
+    // B : 反彈
+
+  if(linedetected && count > 0){
+    float lineDegree = atan2(sumY, sumX) * RtoD_const;
+    if (lineDegree < 0){lineDegree += 360;} 
+    //Serial.print("degree=");Serial.println(lineDegree);
+
+    if (!first_detect){
+      init_lineDegree = lineDegree;
+      first_detect = true;
+      speed_timer = millis();
+      //Serial.println("LINE DETECTED !!!");
+      //Serial.print("initlineDegree =");Serial.println(init_lineDegree);
+    }
+
+    diff = fabs(lineDegree - init_lineDegree);
+    if(diff > 180){diff = 360 - diff;}
+    Serial.print("diff =");Serial.println(diff);
+
+    float finalDegree;
+    if(diff > EMERGENCY_THRESHOLD){
+      overhalf = true;
+      finalDegree = fmod(init_lineDegree +180.0f,360.0f);
+    }
+    else{
+      overhalf = false;
+      finalDegree = fmod(lineDegree + 180.0f, 360.0f);
+    }
+    //Serial.print("finalDegree =");Serial.println(finalDegree);
+        
+    lineVx = 40.0f *cos(finalDegree * DtoR_const);
+    lineVy = 40.0f *sin(finalDegree * DtoR_const);
+    //Serial.print("lineVx =");Serial.println(lineVx);
+
+    //Serial.print("lineVy =");Serial.println(lineVy);
+   
+
+    Vector_Motion((int)lineVx, (int)lineVy);
+
+    
+    return;
+  }
+  if(!linedetected && !overhalf && (millis() - speed_timer > 300 )){ // no line
     count = 0;
-    lineVx = 0;
-    lineVy = 0;
     first_detect = false;
     init_lineDegree = -1;
     speed_timer = 0;
-  }
-  if(control.picked_up){
-    count = 0;
-    lineVx = 0;
-    lineVy = 0;
+    Serial.println("back to field");
+    }
+  if(!linedetected){
     first_detect = false;
-    init_lineDegree = -1;
     overhalf = false;
-    speed_timer = 0;
+    lineVx = 0;
+    lineVy = 0;
   }
-  Serial.printf("cout=%d\n",count);
+  if(ballData.valid){    //有球
+  Serial.print("Angle: "); Serial.println(ballData.angle);
+  Serial.print("Dist: "); Serial.println(ballData.dist);
+
+  //轉成弧度
+  float moving_degree = ballData.angle;
+  float ballspeed = constrain(map(ballData.dist, 40, 100, 20, 50),20, 50);
+  float offset = 0;
+
+  ballspeed = constrain(ballspeed, 20, 50);
+  
+  if(ballData.dist >= 70){
+    moving_degree = ballData.angle;
+    offset = 0;
+  }
+  else if(ballData.angle <= 105 && ballData.angle >= 75){
+    ballspeed = 30;
+    moving_degree = 90;
+    offset = 0;
+  }
+  else{
+    if (ballData.dist < 42){
+      offset = 90;
+    }
+    float offsetRatio = exp(-0.05 * (ballData.dist - 42));
+    offsetRatio = constrain(offsetRatio, 0.0, 1.0);
+    offset = 45 + 45 * offsetRatio;
+    
+    float side;
+    if(ballData.angle > 90 && ballData.angle < 270){
+      side = 1;
+    }
+    else{side = -1;}
+
+    moving_degree = ballData.angle + (offset * side);
+    moving_degree = fmod(moving_degree + 360.0f, 360.0f) ;
+
+  }
+      
+    //計算vx vy
+  ballVx = (int)round(ballspeed * cos(moving_degree * DtoR_const));
+  ballVy = (int)round(ballspeed * sin(moving_degree * DtoR_const));
+
+  Serial.printf("moving%f",moving_degree);Serial.print("");
+  Serial.print("vx");Serial.println(ballVx);
+  Serial.print("vy");Serial.println(ballVy);
+  for(uint8_t i = 0; i < 18; i++){
+    Serial.print(lineData.state >> (i)&1);
+  }
+  Serial.println("");
+  }
+}
+  /*Serial.printf("cout=%d\n",count);
   if(count > 0 || overhalf){
     float lineDegree = atan2(sumY, sumX) * RtoD_const;
     if(!linedetected && overhalf ){
@@ -285,14 +389,13 @@ void attack(){
     //Serial.printf("overhalf = %d", overhalf);
     //Serial.printf("lineDegre = %d", lineDegree);
     if(diff > EMERGENCY_THRESHOLD){
-      /*
       if(overhalf){
         finalDegree = fmod(init_lineDegree + 180, 360);
       }
       else{
         overhalf = true;
         finalDegree = lineDegree;
-      }*/
+      }
       overhalf = true;
       finalDegree = fmod(lineDegree, 360);;
     }
@@ -302,177 +405,78 @@ void attack(){
       // delay(1000);
     }
 
-    /*
     if(overhalf && (hori_half | vert_half)){
       finalDegree =  init_lineDegree + 180;
-    }*/
-    /*
+    }
     Serial.print("lineDegree=");
     Serial.println(lineDegree);
     Serial.print("finalDegree=");
     Serial.println(finalDegree);
     Serial.print("first_detect");
     Serial.println(first_detect);
-    */
     //float speed = constrain(speed_timer, -40,40);
+    //Serial.printf("usData.dist_f%d, usData.dist_b%d\n", usData.dist_f, usData.dist_b);
+
     lineVx = speed * cos(finalDegree * DtoR_const);
     lineVy = speed * sin(finalDegree * DtoR_const);
+    float angle_diff = abs(90-control.robot_heading) * DtoR_const;
+    float replfront = cos(angle_diff) * ((usData.dist_f * cos(angle_diff) - 15) / 5.0);//speed down started from 60cm
+    float replback = cos(angle_diff) * ((usData.dist_b * cos(angle_diff) - 15) / 15.0);//speed down started from 60cm
+    replfront = 1 - constrain(replfront, 0, 1);//block from 0-1;
+    replfront *= -1;//negative force
+    replback = 1 - constrain(replback, 0, 1);//block from 0-1;
+    replback *= 1;//positive force
+    Serial.printf("replfront%f, replback%f", replfront, replback);
+    if(lineVy > 0){
+        lineVy += replfront * MAX_V;
+    }
+    if(lineVy < 0){
+        lineVy += replback * MAX_V;
+    }
+    
+    float replleft =  cos(angle_diff) * ((usData.dist_l * cos(angle_diff) - 20) / 20.0);//speed down started from 60cm
+    float replright = cos(angle_diff) * ((usData.dist_r * cos(angle_diff) - 20) / 20.0);//speed down started from 60cm
+    replright = 1 - constrain(replright, 0, 1);//block from 0-1;
+    replright *= -1;//negative force
+    replleft = 1 - constrain(replleft, 0, 1);//block from 0-1;
+    replleft *= 1;//positive force
+    if(lineVx > 0){
+        lineVx += replright * MAX_V;
+    }
+    if(lineVx < 0){
+        lineVx += replleft * MAX_V;
+    }
     Vector_Motion(int(lineVx), int(lineVy));
+  
     //Vector_Motion(0,0);
     //Serial.print("lineVx="); Serial.print(lineVx);
-    //Serial.print("lineVy="); Serial.println(lineVy);
-  }
-  else{
-    lineVx = 0;
-    lineVy = 0;
-    if(!start){
-      showMessage("Start");
-      start = true;
-    }
-    ballsensor();
-    if(ballData.dir == 255){ 
-      Vector_Motion(0,0);
-      /*if(usData.dist_b <= 110 && usData.dist_b >= 90){
-        ballVy = 0;
-      }
-      else if(usData.dist_b < 90 ){
-        ballVy = 25;
-      }
-      else if(usData.dist_b > 110){
-        ballVy = -25;
-      }
-    Serial.print("ballVy");Serial.println(ballVy);
-    
-
-    if((abs(usData.dist_r - usData.dist_l)) <= 30){
-        ballVx = 0;
-      }
-      else if(abs(usData.dist_r - usData.dist_l) > 30 && usData.dist_r > usData.dist_l){
-        ballVx = 25;
-      }
-      else if(abs(usData.dist_r - usData.dist_l) > 30 && usData.dist_r < usData.dist_l){
-        ballVx = -25;
-      }*/
-    //Serial.print("ballVx");Serial.println(ballVx);
-    }
-    else{
-      float ballDegree = ballDegreelist[ballData.dir];
-      float offset = 0;
-      //Serial.print("balldir=");Serial.println(ballData.dir);
-      Serial.print("ballDegree=");Serial.println(ballDegree);
-      //Serial.print("ballData.dis=");Serial.println(ballData.dis);
-      // Serial.print("exp");Serial.println(exp(-0.55*(ballData.dis-7)));
-      float ballspeed = map(ballData.dis, 0, 12, 20, MAX_V);
-      if(ballDegree == 87.5 || ballDegree == 92.5){
-        offset = 0;
-        ballspeed = 30;
-        //ballspeed = 40;
-      }
-      else{
-        double offsetRatio = exp(-0.55 *(ballData.dis - 7));
-        offsetRatio =(exp(-0.55 *(ballData.dis - 7)) > 1) ? 1 : offsetRatio;
-        offset = 95 * offsetRatio;
-        offset =(ballDegree > 90) ? offset : -offset;
-        offset =(ballDegree < 270) ? offset : -offset;
-        //Serial.print("offset=");
-        //Serial.println(offset);
-      }
-      float moving_Degree = ballDegree + offset;
-      // Serial.print("moving_Degree="); Serial.println(moving_Degree);
-      ballspeed = constrain(ballspeed, 20, MAX_V);
-      // Serial.print("BallSpeed="); Serial.println(ballspeed);
-      ballVx = ballspeed * cos(moving_Degree * DtoR_const);
-      ballVy = ballspeed * sin(moving_Degree * DtoR_const);
-      /*
-      if(ballVx < 20 && ballVx > 0){ ballVx = 20;}
-      if(ballVx > -20 && ballVx < 0){ ballVx = -20;}
-      if(ballVy < 20 && ballVy > 0){ ballVy = 20;}
-      if(ballVy > -20 && ballVy < 0){ ballVy = -20;}
-      */
-      Serial.printf("origi%f %f", ballVx, ballVy);
-    }
-    Serial.printf("out: %d %d %d\n", backtouch, lefttouch, righttouch);
-    // INTERRUPT
-    if(backtouch && ballVy < 0){
-      ballVy = 0;
-      Serial.println("back");
-      if(lefttouch && backtouch){
-        if(targetData.valid == 65535){
-          ballVy = 30;
-        }
-        else if(targetData.valid != 65535){
-          ballVx = 30;  
-        } 
-      }
-      else if(righttouch && backtouch){
-        if(targetData.valid == 65535){
-          ballVy = 30;
-        }
-        else if(targetData.valid != 65535){
-          ballVx = -30;
-        }
-      } 
-    }
-    if(lefttouch && ballVx < 0){
-      ballVx = 0;
-      if(lefttouch && backtouch){
-        if(targetData.valid == 65535){
-          ballVy = 30;
-        }
-        else if(targetData.valid != 65535){
-          ballVx = 30;
-        } 
-      }
-    }
-    if(righttouch && ballVx > 0){
-      ballVx = 0;
-      if(righttouch && backtouch){
-        if(targetData.valid == 65535){
-          ballVy = 30;
-        }
-        else if(targetData.valid != 65535){
-          ballVx = -30;
-        } 
-      }
-    }
-    //if(analogRead(back_us) < 40 && (righttouch || lefttouch)){
+    //Serial.print("lineVy="); Serial.println(lineVy);*/
+       //if(analogRead(back_us) < 40 && (righttouch || lefttouch)){
       //ballVy = 30;
     //}
-    /*/
-    if(lefttouch || righttouch){
-      if(targetData.h > 25 && ballVy > 0){
-        ballVy = -15;
-      }
-    }
-    if(analogRead(right_us) < 50 && ballVx > 0){
-      ballVx *= 0.5;
-    }
-    else if(analogRead(left_us) < 50 && ballVx < 0){
-      ballVx *= 0.5;
-    }
-    if(backtouch && lefttouch && targetData.h != 65535){
-    }
-    else if(backtouch && righttouch && targetData.h != 65535){
-    }*/
-    if(ballData.possession < possession_Threshold){
-      ballVy = MAX_V;
-      //catch_timer+=2;
-      //if(catch_timer > 4){
-        //if(targetData.valid){
-          //if(targetData.h > 23){
-            //kicker_control(1);
-            //Serial.print("kick");
-            //catch_timer = 0;
-          //}
-        //}
+    
+    //if(lefttouch || righttouch){
+      //if(targetData.h > 25 && ballVy > 0){
+        //ballVy = -15;
       //}
-    }
-    else{
+    //}
+    //if(analogRead(right_us) < 50 && ballVx > 0){
+      //ballVx *= 0.5;
+    //}
+    //else if(analogRead(left_us) < 50 && ballVx < 0){
+     // ballVx *= 0.5;
+    //}
+    //if(backtouch && lefttouch && targetData.h != 65535){
+    //}
+    //else if(backtouch && righttouch && targetData.h != 65535){
+    //}
+
+    //else{
       //catch_timer--;
       //if(catch_timer < 0){
-        catch_timer = 0;
+        //catch_timer = 0;
       //}
-    }
+    //}
     //Serial.println(catch_timer);
     //        降速w
     /*if(targetData.valid){
@@ -523,53 +527,7 @@ void attack(){
     }
     if(analogRead(right_us) < 25 && ballVx > 0){
       ballVx = -30;
-    }*/
-    // Example P-control version
-      /*
-    // Tunable constants
-    float Kp_side = 0.5;    // proportional gain for side correction
-    float Kp_front = 1.0;   // proportional gain for front correction
-    float minDist_side = 80; // desired minimum distance from side walls
-    float minDist_front = 45; // desired minimum distance from front wall
-    float maxSpeed = 30;    // clamp max speed
-
-    // Read sensor values
-    int distLeft  = analogRead(left_us);
-    int distRight = analogRead(right_us);
-    int distFront = analogRead(front_us);
-    // --- SIDE WALL CONTROL ---
-
-    // Compute proportional corrections
-    float errorLeft  = (minDist_side - distLeft);
-    float errorRight = (minDist_side - distRight);
-
-    // Only correct when near a wall
-    float correctionX = 0;
-
-    if (distLeft < minDist_side && ballVx < 0) {
-      correctionX = Kp_side * errorLeft;  // push away from wall
     }
-    else if (distRight < minDist_side && ballVx > 0) {
-      correctionX = -Kp_side * errorRight;
-    }
-
-    // Apply correction
-    ballVx += correctionX;
-
-    // Clamp to safe limits
-    ballVx = constrain(ballVx, -maxSpeed, maxSpeed);
-
-
-    // --- FRONT WALL CONTROL ---
-
-    if (distFront < minDist_front) {
-      float errorFront = (minDist_front - distFront);
-      float correctionY = -Kp_front * errorFront;
-      ballVy += correctionY;
-
-      // optional clamp
-      ballVy = constrain(ballVy, -maxSpeed, maxSpeed);
-    }*/
 
     // Optional debug output
     Serial.print("Vx: ");
@@ -579,31 +537,31 @@ void attack(){
 
     Serial.printf("usData.dist_f%d, usData.dist_b%d\n", usData.dist_f, usData.dist_b);
     float angle_diff = abs(90-control.robot_heading) * DtoR_const;
-    float replfront = cos(angle_diff) * ((usData.dist_f * cos(angle_diff) - 30) / 15.0);//speed down started from 60cm
-    float replback = cos(angle_diff) * ((usData.dist_b * cos(angle_diff) - 30) / 15.0);//speed down started from 60cm
+    float replfront = cos(angle_diff) * ((usData.dist_f * cos(angle_diff) - 30) / 30.0);//speed down started from 60cm
+    float replback = cos(angle_diff) * ((usData.dist_b * cos(angle_diff) - 25) / 25.0);//speed down started from 60cm
     replfront = 1 - constrain(replfront, 0, 1);//block from 0-1;
     replfront *= -1;//negative force
     replback = 1 - constrain(replback, 0, 1);//block from 0-1;
     replback *= 1;//positive force
-    Serial.printf("replfront%f, replback%f", replfront, replback);
-    if(ballVy> 0){
-        ballVy += replfront * MAX_V;
-    }
-    if(ballVy < 0){
-        ballVy += replback * MAX_V;
-    }
-    
-    float replleft =  cos(angle_diff) * ((usData.dist_l * cos(angle_diff) - 30) / 15.0);//speed down started from 60cm
-    float replright = cos(angle_diff) * ((usData.dist_r * cos(angle_diff) - 30) / 15.0);//speed down started from 60cm
+    Serial.printf("usData.dist_l%d, usData.dist_r%d\n", usData.dist_l, usData.dist_r);
+    float replleft =  cos(angle_diff) * ((usData.dist_l * cos(angle_diff) - 25) / 25.0);//speed down started from 60cm
+    float replright = cos(angle_diff) * ((usData.dist_r * cos(angle_diff) - 25) / 25.0);//speed down started from 60cm
     replright = 1 - constrain(replright, 0, 1);//block from 0-1;
     replright *= -1;//negative force
     replleft = 1 - constrain(replleft, 0, 1);//block from 0-1;
     replleft *= 1;//positive force
-    if(ballVx > 0){
-        ballVx += replright * MAX_V;
+    Serial.printf("replfront%f, replback%f", replfront, replback);
+    if(ballVy> 0.5*MAX_V //&& (abs(replleft)>0.5 || abs(replright)>0.5)){
+        ballVy += replfront * MAX_V*0.5;
     }
-    if(ballVx < 0){
-        ballVx += replleft * MAX_V;
+    if(ballVy < -0.5*MAX_V){
+        ballVy += replback * MAX_V*0.5;
+    }
+    if(ballVx > 0.5 * MAX_V){
+        ballVx += replright * MAX_V * 0.5;
+    }
+    if(ballVx < -0.5 * MAX_V){
+        ballVx += replleft * MAX_V * 0.5;
     }
     Serial.printf("ballVx = %f, ballVy = %f\n", ballVx, ballVy);
     //Vector_Motion(0,0);
@@ -612,7 +570,7 @@ void attack(){
   //Vector_Motion(0,0);
   Serial.println("----------");
   Serial.print("ballVy");Serial.println(ballVy);
-  Serial.print("ballVx");Serial.println(ballVx);
+  Serial.print("ballVx");Serial.println(ballVx);*/
   // float finalVx =(lineVx != 0) ? lineVx : ballVx + lineVx;
   // float finalVy =(lineVy != 0) ? lineVy : ballVy + lineVy;
   
@@ -629,9 +587,4 @@ void attack(){
   //Serial.print("usleft =");Serial.println(analogRead(left_us));  
   //Serial.print("usright =");Serial.println(analogRead(right_us));
   //Serial.print("usfront =");Serial.println(analogRead(front_us));
-  Serial.print("speedtimer");Serial.println(speed_timer);
-  for(uint8_t i = 0; i < 18; i++){
-    Serial.print(lineData.state >> (i)&1);
-  }
-  Serial.println("");
-}
+
