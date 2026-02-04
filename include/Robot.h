@@ -116,6 +116,7 @@ struct RobotControl{
 // Including prototypes for the new functions and existing ones
 void Robot_Init();
 void readBNO085Yaw();
+void readCameraData();
 void ballsensor();
 void linesensor();
 void positionEst();
@@ -141,7 +142,7 @@ void readBallCam();
 // ******************************************************
 
 void Robot_Init(){
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial2.begin(115200);
   Serial3.begin(115200);
   Serial4.begin(115200);
@@ -253,8 +254,8 @@ void readCameraData(){
   static uint8_t buffer[10];
   uint8_t index = 0;
   targetData.valid = false;
-  while (Serial3.available()){
-    uint8_t b = Serial3.read();
+  while (Serial5.available()){
+    uint8_t b = Serial5.read();
     if(index == 0 && b != 0xCC){
       continue;  // 等待開頭 0xCC
     }
@@ -274,32 +275,6 @@ void readCameraData(){
     }
   }
 }
-/*void ballsensor(){
-  // 發送請求封包，通知感測器回傳資料
-  uint8_t b[4];
-  ballData.valid = false;
-
-  Serial4.write(0xBB);
-  while(!Serial4.available());
-  Serial4.readBytes(b,4);
-  if(b[1]==0xFF){
-      ballData.valid = false;
-      ballData.dir = 255;
-      ballData.dis = 255;
-  }
-  else if(b[0]==0xAA){
-    uint8_t temp =b[1];
-    ballData.valid = true;
-    ballData.dir = (temp & 0x0F);
-    ballData.dis = (temp & 0xF0)>>4;
-    //ballData.possession = (uint8_t)((1-alpha) * b[2] + ballData.possession * alpha);
-    ballData.possession = (uint8_t) b[2];
-  
-  }
-  else{
-    ballData.valid = false;
-  }
-}*/
 void readBallCam(){
     
     static uint8_t buffer[6] = {0};

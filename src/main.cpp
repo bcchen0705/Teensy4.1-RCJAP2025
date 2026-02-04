@@ -168,6 +168,9 @@ void attack(){
     control.picked_up =(gyroData.pitch > 20) ? true : false;
   }
   //Serial.print("height");Serial.println(targetData.h);
+
+
+  
   float rotate = 0;
   if(targetData.valid){
     if(targetData.y > 90){

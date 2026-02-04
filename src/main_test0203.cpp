@@ -27,6 +27,10 @@ uint32_t speed_timer = 0;
 unsigned long lastCameraUpdate = 0;  // 記錄上次執行時間
 const unsigned long interval = 50;  // 20Hz = 每50毫秒一次
 
+//GOAL
+uint32_t lastTargetTime = 0;
+bool wasTargetValid = false;
+
 int lastLeftState = HIGH;
 int lastRightState = HIGH;
 unsigned long lastPress = 0;
@@ -90,7 +94,56 @@ void attack(){
   readBNO085Yaw();
   linesensor();
   readBallCam();
+
+  unsigned long now = millis();
+  uint32_t currentTime = millis();
+  static float rotate = 0;
+
+  if(now - lastCameraUpdate >= interval){
+    lastCameraUpdate = now;
+    readCameraData();
+    if(targetData.valid){
+      lastTargetTime = now;
+
+      if(targetData.x >= 100 && targetData.x <= 220){
+        if(control.robot_heading > 100) {rotate = -0.1f;}
+        else if(control.robot_heading < 80){rotate = 0.1f;}
+        else{rotate = 0;}
+      }
+      else if(targetData.x < 100){
+        int16_t e = (100.0f - targetData.x);
+        rotate = 0.15f * (e / 100.0f);
+      }
+      else if(targetData.x > 220){
+        int16_t e = (targetData.x - 220.0f);
+        rotate = -0.15f * (e / 100.0f);
+      }
+    }
+    else{
+      if(now - lastTargetTime < 3000){rotate =0 ;}
+      else{
+        if(control.robot_heading > 95) {rotate = -0.05f;}
+        else if(control.robot_heading < 85){rotate = 0.05f;}
+        else{rotate = 0;}
+      }
+    }
+  }
   
+  control.robot_heading += rotate;
+  control.robot_heading = constrain(control.robot_heading, 45, 135);
+
+
+static uint32_t lastPrint = 0;
+  if (millis() - lastPrint > 100) { 
+    Serial.print("Teensy Rx Bin: ");
+    for (int i = 17; i >= 0; i--) {
+      Serial.print(!bitRead(lineData.state, i));
+      if (i % 4 == 0 && i != 0) Serial.print(" "); // 每 8 位空一格
+    }
+    Serial.println();
+    lastPrint = millis();
+  }
+
   float sumX = 0.0f, sumY = 0.0f;
   int count = 0;
   bool linedetected = false;
@@ -107,7 +160,7 @@ void attack(){
 
   // B : 反彈
 
-  if(linedetected && count > 0){
+  if(linedetected && count > 1){
     float lineDegree = atan2(sumY, sumX) * RtoD_const;
     if (lineDegree < 0){lineDegree += 360;} 
     Serial.print("degree=");Serial.println(lineDegree);
@@ -156,7 +209,7 @@ void attack(){
 
       //轉成弧度
       float moving_degree = ballData.angle;
-      float ballspeed = constrain(map(ballData.dist, 40, 100, 20, 50),20, 50);
+      float ballspeed = constrain(map(ballData.dist, 30, 70, 20, 50),20, 50);
       float offset = 0;
 
       ballspeed = constrain(ballspeed, 20, 50);
@@ -204,12 +257,10 @@ void attack(){
         //gyroData.control.robot_heading = ballData.angle;
       //}
       Vector_Motion(ballVx,ballVy);
-      //delay(300);
     }
     else { //無球
       Serial.println("No Ball Detected");
       Vector_Motion(0,0);
     }
   }
-
 }
