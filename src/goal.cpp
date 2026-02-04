@@ -26,69 +26,66 @@ void setup(){
 
 void loop(){
   readBNO085Yaw();
-
+  readCameraData();
+  
   unsigned long now = millis();
+  static float lastVisualError = 0;
+  static float finalHeading = 90.0f;
+  uint32_t currentTime = millis();
+
+  //轉向球門
   if(now - lastCameraUpdate >= interval){
     lastCameraUpdate = now;
-    readCameraData();
-  
+    
+
+
+    if(targetData.valid){
+      lastTargetTime = now;
+      
+      float VisualError = (160.0f - float(targetData.x)) / 160.0f;
+
+      finalHeading = 90.0f + (VisualError * 55.0f);
+
+    }
+    else{
+      if(now - lastTargetTime > 2000){
+        finalHeading = 90.0f;
+      }
+    }
   }
-
-  
-
-  
-  uint32_t currentTime = millis();
-  float rotate = 0;
-
-  if(targetData.valid){
-    lastTargetTime = currentTime;
-
-      if(targetData.x >= 100 && targetData.x <= 220){
-        if(control.robot_heading > 100) {
-        rotate = -0.2f;
-        }
-        else if(control.robot_heading < 80){
-          rotate = 0.2f;
-        }
-        else{
-          rotate = 0;
-        }
+      /*if(targetData.x >= 100 && targetData.x <= 220){
+        if(control.robot_heading > 110) {rotate = -0.1f;}
+        else if(control.robot_heading < 70){rotate = 0.1f;}
+        else{rotate = 0;}
       }
       else if(targetData.x < 100){
-        int16_t e = (100-targetData.x);
+        int16_t e = (100.0f - targetData.x);
         rotate = 0.2f * (e / 100.0f);
-
       }
       else if(targetData.x > 220){
-        int16_t e = (targetData.x - 220);
+        int16_t e = (targetData.x - 220.0f);
         rotate = -0.2f * (e / 100.0f);
       }
     }
-  else{
-    if(currentTime - lastTargetTime > 3000){
-      if(control.robot_heading > 100) {
-        rotate = -0.2;
-      }
-      else if(control.robot_heading < 80){
-        rotate = 0.2f;
-      }
+    else{
+      if(now - lastTargetTime < 3000){rotate =0 ;}
       else{
-        rotate = 0;
+        if(control.robot_heading > 90) {rotate = -0.1f;}
+        else if(control.robot_heading < 90){rotate = 0.1f;}
+        else{rotate = 0;}
       }
     }
   }
+  */
+  control.robot_heading = finalHeading;
+  control.robot_heading = constrain(control.robot_heading, 45, 135);
 
-  control.robot_heading += rotate;
-  if(control.robot_heading < 45){ control.robot_heading = 45;}
-  if(control.robot_heading > 135){ control.robot_heading = 135;}
-
-  
-  //Serial.print(" heading");Serial.println(control.robot_heading);
-  
+  Vector_Motion(0,0);
+  Serial.print("heading=");Serial.println(control.robot_heading);
+  //Serial.print("rotate=");Serial.println(rotate);
 
   Serial.print(" X=");Serial.print(targetData.x);
   Serial.print(" Y=");Serial.print(targetData.y);
   Serial.print(" W=");Serial.print(targetData.w);
   Serial.print(" H=");Serial.println(targetData.h);
-  //delay(300);
 }

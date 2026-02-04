@@ -99,6 +99,8 @@ void attack(){
   uint32_t currentTime = millis();
   static float rotate = 0;
 
+
+  //轉向球門
   if(now - lastCameraUpdate >= interval){
     lastCameraUpdate = now;
     readCameraData();
@@ -132,6 +134,7 @@ void attack(){
   control.robot_heading += rotate;
   control.robot_heading = constrain(control.robot_heading, 45, 135);
 
+/*  檢查光感
 
 static uint32_t lastPrint = 0;
   if (millis() - lastPrint > 100) { 
@@ -144,6 +147,10 @@ static uint32_t lastPrint = 0;
     lastPrint = millis();
   }
 
+*/
+
+
+//-----LINE SENSOR-----
   float sumX = 0.0f, sumY = 0.0f;
   int count = 0;
   bool linedetected = false;
@@ -160,7 +167,7 @@ static uint32_t lastPrint = 0;
 
   // B : 反彈
 
-  if(linedetected && count > 1){
+  if(linedetected && count > 0){
     float lineDegree = atan2(sumY, sumX) * RtoD_const;
     if (lineDegree < 0){lineDegree += 360;} 
     Serial.print("degree=");Serial.println(lineDegree);
@@ -177,10 +184,12 @@ static uint32_t lastPrint = 0;
     if(diff > 180){diff = 360 - diff;}
     Serial.print("diff =");Serial.println(diff);
 
+
+    ////-----BACK TO FIELD-----
     float finalDegree;
     if(diff > EMERGENCY_THRESHOLD){
       overhalf = true;
-      finalDegree = fmod(init_lineDegree +180.0f,360.0f);
+      finalDegree = fmod(init_lineDegree + 180.0f,360.0f);
     }
     else{
       overhalf = false;
@@ -203,6 +212,10 @@ static uint32_t lastPrint = 0;
     overhalf = false;
     speed_timer = 0;
     first_detect = false;
+
+
+    //-----BALL SENSOR-----
+
     if(ballData.valid){    //有球
       Serial.print("Angle: "); Serial.println(ballData.angle);
       Serial.print("Dist: "); Serial.println(ballData.dist);
@@ -218,8 +231,8 @@ static uint32_t lastPrint = 0;
         moving_degree = ballData.angle;
         offset = 0;
       }
-      else if(ballData.angle <= 105 && ballData.angle >= 75){
-        ballspeed = 30;
+      else if(ballData.angle <= 110 && ballData.angle >= 70){
+        ballspeed = 40;
         moving_degree = 90;
         offset = 0;
       }
@@ -227,7 +240,7 @@ static uint32_t lastPrint = 0;
         if (ballData.dist <= 30){
           offset = 90;
         }
-        float offsetRatio = exp(-0.05 * (ballData.dist - 30));
+        float offsetRatio = exp(-0.8 * (ballData.dist - 30));
         offsetRatio = constrain(offsetRatio, 0.0, 1.0);
         offset = 45 + 45 * offsetRatio;
         
@@ -261,6 +274,6 @@ static uint32_t lastPrint = 0;
     else { //無球
       Serial.println("No Ball Detected");
       Vector_Motion(0,0);
-    }
+    }   
   }
 }
