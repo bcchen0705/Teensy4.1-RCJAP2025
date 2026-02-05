@@ -24,68 +24,79 @@ void setup(){
   display.clearDisplay();
 }
 
+
+static float rotate = 0;
 void loop(){
   readBNO085Yaw();
   readCameraData();
-  
   unsigned long now = millis();
-  static float lastVisualError = 0;
-  static float finalHeading = 90.0f;
-  uint32_t currentTime = millis();
-
-  //轉向球門
   if(now - lastCameraUpdate >= interval){
     lastCameraUpdate = now;
-    
-
-
     if(targetData.valid){
+      static bool isRecovering = false; // 紀錄是否正在處理邊緣回彈
       lastTargetTime = now;
-      
-      float VisualError = (160.0f - float(targetData.x)) / 160.0f;
 
-      finalHeading = 90.0f + (VisualError * 55.0f);
-
-    }
-    else{
-      if(now - lastTargetTime > 2000){
-        finalHeading = 90.0f;
+      // --- 1. 邊緣觸發：當球門太偏，進入「強制修正模式」 ---
+      if (targetData.x < 90 || targetData.x > 210) {
+        isRecovering = true;
       }
-    }
-  }
-      /*if(targetData.x >= 100 && targetData.x <= 220){
-        if(control.robot_heading > 110) {rotate = -0.1f;}
-        else if(control.robot_heading < 70){rotate = 0.1f;}
+
+      if (isRecovering) {
+        // 強制轉向，直到球門回到中間區間 (140~180)
+        if (targetData.x < 140) rotate = 0.8;
+        else if (targetData.x > 180) rotate = -0.8;
+        else {
+            isRecovering = false; // 回到中間了，解除強制模式
+            rotate = 0;
+        }
+      } 
+      else {
+        // --- 2. 核心修正：球門在中間了，但車身如果是斜的，要慢慢回正到 90 ---
+        // 這裡就是解決你說「回到中間轉不回來」的關鍵
+        if (control.robot_heading > 92) {
+            rotate = -0.3; // 緩慢向左修正
+        } else if (control.robot_heading < 88) {
+            rotate = 0.3;  // 緩慢向右修正
+        } else {
+            rotate = 0;
+            control.robot_heading = 90; // 進入死區，強制鎖定 90
+        }
+      }
+      /*
+      if(targetData.x >= 100 && targetData.x <= 220){
+        if(control.robot_heading > 100) {rotate = -0.8f;}
+        else if(control.robot_heading < 80){rotate = 0.8f;}
         else{rotate = 0;}
       }
       else if(targetData.x < 100){
         int16_t e = (100.0f - targetData.x);
-        rotate = 0.2f * (e / 100.0f);
+        rotate = 0.8f * (e / 100.0f);
       }
       else if(targetData.x > 220){
         int16_t e = (targetData.x - 220.0f);
-        rotate = -0.2f * (e / 100.0f);
-      }
+        rotate = -0.8f * (e / 100.0f);
+      }*/
     }
-    else{
+    else{ //沒球門
       if(now - lastTargetTime < 3000){rotate =0 ;}
       else{
-        if(control.robot_heading > 90) {rotate = -0.1f;}
-        else if(control.robot_heading < 90){rotate = 0.1f;}
+        if(control.robot_heading > 95) {rotate = -0.8f;}
+        else if(control.robot_heading < 85){rotate = 0.8f;}
         else{rotate = 0;}
       }
     }
-  }
-  */
-  control.robot_heading = finalHeading;
-  control.robot_heading = constrain(control.robot_heading, 45, 135);
+
+  
+  control.robot_heading += rotate;
+  if(targetData.h > 30){
+  control.robot_heading = constrain(control.robot_heading, 50, 140);}
+  else{control.robot_heading = constrain(control.robot_heading, 40, 140);}
 
   Vector_Motion(0,0);
-  Serial.print("heading=");Serial.println(control.robot_heading);
-  //Serial.print("rotate=");Serial.println(rotate);
 
   Serial.print(" X=");Serial.print(targetData.x);
   Serial.print(" Y=");Serial.print(targetData.y);
   Serial.print(" W=");Serial.print(targetData.w);
   Serial.print(" H=");Serial.println(targetData.h);
+  }
 }
