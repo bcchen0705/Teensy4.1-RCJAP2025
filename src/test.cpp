@@ -130,8 +130,15 @@ bool Debug() {
 
 void loop(){
   while(Debug());
-  while (1) {
-    attack(); // 執行你的比賽邏輯
+
+// --- 關閉螢幕 ---
+  display.clearDisplay();
+    display.display(); 
+    Serial.println("OLED Blackout for Competition Mode");
+// -------------------------
+
+    while (1) {
+    attack(); // 執行
   }
 }
 
@@ -140,17 +147,7 @@ void attack(){
   linesensor();
   readBallCam();
 
-// --- 關閉螢幕 ---
-  static bool screenCleared = false;
-  if (!screenCleared) {
-    display.clearDisplay();
-    display.display(); 
-    screenCleared = true;
-    Serial.println("OLED Blackout for Competition Mode");
-  }
-// -------------------------
-
-// --- 重製 ---
+// --- 重置 ---
   if (fabs(gyroData.pitch) > 15) {
     lineVx = 0;lineVy = 0;
     ballVx = 0;ballVy = 0;
@@ -158,9 +155,7 @@ void attack(){
     init_lineDegree = -1;
     overhalf = false;
     isRecovering = false;
-    // 讓機器人放下後暫時朝向正前方，避免噴走
     control.robot_heading = 90; 
-    
     Vector_Motion(0, 0); 
     Serial.println("ROBOT PICKED UP - ALL STATES RESET");
     return; 
@@ -183,8 +178,8 @@ void attack(){
 
       if (isRecovering) {
         // 強制轉向，直到球門回到中間區間 (140~180)
-        if (targetData.x < 140) rotate = 0.18;
-        else if (targetData.x > 180) rotate = -0.18;
+        if (targetData.x < 140) rotate = 0.15;
+        else if (targetData.x > 180) rotate = -0.15;
         else {
             isRecovering = false; // 回到中間了，解除強制模式
             rotate = 0;
@@ -192,11 +187,10 @@ void attack(){
       } 
       else {
         // --- 2. 核心修正：球門在中間了，但車身如果是斜的，要慢慢回正到 90 ---
-        // 這裡就是解決你說「回到中間轉不回來」的關鍵
         if (control.robot_heading > 110) {
-            rotate = -0.18; // 緩慢向左修正
+            rotate = -0.15; // 緩慢向左修正
         } else if (control.robot_heading < 80) {
-            rotate = 0.18;  // 緩慢向右修正
+            rotate = 0.15;  // 緩慢向右修正
         } else {
             rotate = 0;
             control.robot_heading = 90; // 進入死區，強制鎖定 90
@@ -206,8 +200,8 @@ void attack(){
     else{ //沒球門
       if(now - lastTargetTime < 1000){rotate =0 ;}
       else{
-        if(control.robot_heading > 95) {rotate = -0.18f;}
-        else if(control.robot_heading < 85){rotate = 0.18f;}
+        if(control.robot_heading > 95) {rotate = -0.15f;}
+        else if(control.robot_heading < 85){rotate = 0.15f;}
         else{rotate = 0;}
       }
     }
@@ -217,6 +211,8 @@ void attack(){
   if(targetData.h > 30){
   control.robot_heading = constrain(control.robot_heading, 30, 150);}
   else{control.robot_heading = constrain(control.robot_heading, 45, 135);}
+
+
 /*  檢查光感
 
 static uint32_t lastPrint = 0;
@@ -240,7 +236,9 @@ static uint32_t lastPrint = 0;
   for(int i = 0; i < 18; i++){
     if(!bitRead(lineData.state, i)){
       //if(i==0){continue;}
-      Serial.printf("read%d", i);
+      
+      //Serial.printf("read%d", i);
+      
       float deg = linesensorDegreelist[i];
       sumX += cos(deg * DtoR_const);
       sumY += sin(deg * DtoR_const);
@@ -254,19 +252,22 @@ static uint32_t lastPrint = 0;
   if(linedetected && count > 1){
     float lineDegree = atan2(sumY, sumX) * RtoD_const;
     if (lineDegree < 0){lineDegree += 360;} 
-    Serial.print("degree=");Serial.println(lineDegree);
+    
+    //Serial.print("degree=");Serial.println(lineDegree);
 
     if (!first_detect){
       init_lineDegree = lineDegree;
       first_detect = true;
       speed_timer = millis();
-      Serial.println("LINE DETECTED !!!");
-      Serial.print("initlineDegree =");Serial.println(init_lineDegree);
+      
+      //Serial.println("LINE DETECTED !!!");
+      //Serial.print("initlineDegree =");Serial.println(init_lineDegree);
     }
 
     diff = fabs(lineDegree - init_lineDegree);
     if(diff > 180){diff = 360 - diff;}
-    Serial.print("diff =");Serial.println(diff);
+    
+    //Serial.print("diff =");Serial.println(diff);
 
 
     ////-----BACK TO FIELD-----
@@ -279,13 +280,14 @@ static uint32_t lastPrint = 0;
       overhalf = false;
       finalDegree = fmod(lineDegree + 180.0f, 360.0f);
     }
-    Serial.print("finalDegree =");Serial.println(finalDegree);
+    //Serial.print("finalDegree =");Serial.println(finalDegree);
         
     lineVx = 50.0f *cos(finalDegree * DtoR_const);
     lineVy = 50.0f *sin(finalDegree * DtoR_const);
     Vector_Motion(lineVx, lineVy);
-    Serial.print("lineVx =");Serial.println(lineVx);
-    Serial.print("lineVy =");Serial.println(lineVy);
+    
+    //Serial.print("lineVx =");Serial.println(lineVx);
+    //Serial.print("lineVy =");Serial.println(lineVy);
    
   }
   else{
@@ -301,8 +303,9 @@ static uint32_t lastPrint = 0;
     //-----BALL SENSOR-----
 
     if(ballData.valid){    //有球
-      Serial.print("Angle: "); Serial.println(ballData.angle);
-      Serial.print("Dist: "); Serial.println(ballData.dist);
+      
+      //Serial.print("Angle: "); Serial.println(ballData.angle);
+      //Serial.print("Dist: "); Serial.println(ballData.dist);
 
       //轉成弧度
       float moving_degree = ballData.angle;
@@ -311,11 +314,11 @@ static uint32_t lastPrint = 0;
 
       ballspeed = constrain(ballspeed, 20, 35);
       
-      if(ballData.dist >= 40){
+      if(ballData.dist >= 35){
         moving_degree = ballData.angle;
         offset = 0;
       }
-      else if(ballData.angle <= 119 && ballData.angle >= 69){
+      else if(ballData.angle <= 100 && ballData.angle >= 80){
         ballspeed = 30;
         moving_degree = 90;
         offset = 0;
@@ -327,7 +330,7 @@ static uint32_t lastPrint = 0;
         if (ballData.dist <= 25){
           offset = 90;
         }
-        float offsetRatio = exp(-0.05 * (ballData.dist - 25));
+        float offsetRatio = exp(-0.08 * (ballData.dist - 25));
         offsetRatio = constrain(offsetRatio, 0.0, 1.0);
         offset = 45 + 45 * offsetRatio;
         
@@ -349,15 +352,18 @@ static uint32_t lastPrint = 0;
       if(targetData.valid){
         if(targetData.h >=35 && ballVy > 0){ballVy *= 0.7;}
       }
-      Serial.printf("moving%f",moving_degree);Serial.print("");
-      Serial.print("vx");Serial.println(ballVx);
-      Serial.print("vy");Serial.println(ballVy);
+      
+      //Serial.printf("moving%f",moving_degree);Serial.print("");
+      //Serial.print("vx");Serial.println(ballVx);
+      //Serial.print("vy");Serial.println(ballVy);
 
       Vector_Motion(ballVx,ballVy);
     }
     else { //無球
-      Serial.println("No Ball Detected");
       Vector_Motion(0,0);
+      
+      //Serial.println("No Ball Detected");
+      
     }   
   }
 }
